@@ -66,7 +66,7 @@ def main(argv):
 
     # This section connects and logs user to the server
     soc.connect((str(pool_address), int(pool_port)))
-    soc.settimeout(5)
+    soc.settimeout(10)
     server_version = soc.recv(3).decode()  # Get server version
     print(Fore.GREEN + "DuinoCoin OpenCL Miner for CPU/GPU\n")
     username = input ("Enter your username: ")
