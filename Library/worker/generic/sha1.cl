@@ -284,17 +284,57 @@ def_hash(hash_priv_to_glbl, __private, __global)
 #undef F1
 #undef F2
                 
-__kernel void hash_main(__global const inbuf * inbuffer, 
+__kernel void hash_main(__global unsigned char* last_hash, 
+    unsigned int last_hash_size,
+    unsigned int start,
     __global outbuf * outbuffer, 
     __global uchar* result_buffer,
     __global unsigned int* expected_hash)
 {
     unsigned int idx = get_global_id(0);
 
-    // unsigned int hash[20/4]={0};
+    unsigned char string_to_hash[30];
+     unsigned char number_string[10];
+     unsigned int digits_count;
+     unsigned int digits_count_copy;
+    digits_count = 0;
+     unsigned int result;
+     unsigned int full_size;
+    result = start + idx;
+    
 
-    hash_global(inbuffer[idx].buffer,
-                inbuffer[idx].length, 
+    // counting digits
+    while (result > 0) {
+        result /= 10;
+        digits_count++;
+    }
+
+    // converting integer to string representation
+    digits_count_copy = digits_count;
+    result = start + idx;
+    while (digits_count_copy >0) {
+        number_string[digits_count_copy - 1] = '0'+(result % 10);
+        result /= 10;
+        digits_count_copy -= 1;
+    }
+    
+    // copy last_hash to string_to_hash
+    for (unsigned char i = 0; i < last_hash_size; i++) {
+        string_to_hash[i] = last_hash[i];
+    }
+    // copy number string representation to string_to_hash
+    for (unsigned char i = 0; i < digits_count; i++) {
+        string_to_hash[last_hash_size + i] = number_string[i];
+    }
+    full_size = last_hash_size + digits_count;
+    /*while (full_size % 4 != 0) {
+        string_to_hash[full_size] = 0;
+        full_size += 1;
+    }*/
+
+
+    hash_global(string_to_hash,
+                full_size, 
                 outbuffer[idx].buffer);
 
 
@@ -307,6 +347,9 @@ __kernel void hash_main(__global const inbuf * inbuffer,
         }
     }
     result_buffer[idx] = equal;
+    /*for (unsigned int i = 0; i < full_size; i++) {
+        result_buffer[i] = string_to_hash[i];
+    }*/
 
 /*     outbuffer[idx].buffer[0]=hash[0];
     outbuffer[idx].buffer[1]=hash[1];

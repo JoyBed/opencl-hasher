@@ -83,6 +83,7 @@ class opencl_interface:
             # if device.max_work_group_size<self.workgroupsize:
             #    self.workgroupsize=device.max_work_group_size
 
+        self.workgroupsize *= 1000
         printif(debug, "\nUsing work group size of %d\n" % self.workgroupsize)
 
         # Set the debug flags
@@ -176,7 +177,10 @@ class opencl_interface:
             func, 
             pwdIter,
             expected_hash,
-            paddedLenFunc=None):
+            paddedLenFunc,
+            last_hash,
+            start,
+            end):
 
         wordType=self.wordType
         wordSize=self.wordSize
@@ -192,42 +196,28 @@ class opencl_interface:
         outBufSize_bytes = bufStructs.outBufferSize_bytes
         outBufferSize = bufStructs.outBufferSize * 2
 
+        chunkSize = self.workgroupsize
         # Main loop is taking chunks of at most the workgroup size
-        while True:
-            # Moved to bytearray initially, avoiding copying and above all
-            #   'np.append' which is horrific
-            pwArray = bytearray()
-            # For each password in our chunk, process it into pwArray, with length first
-            # Notice that this lines up with the struct declared in the .cl file!
-            chunkSize = self.workgroupsize
-            for i in range(self.workgroupsize):
-                try:
-                    pw = pwdIter.__next__()
-                except StopIteration:
-                    # Correct the chunk size and break
-                    chunkSize = i
-                    break
+        for i in range(start,end,chunkSize):
+            
+            workgroup_size = chunkSize
+            if i + workgroup_size>end:
+                workgroup_size = end-i
 
-                pwLen = len(pw)
-                # Now passing hash block size as a parameter.. could be None?
-
-                # Add the length to our pwArray, then pad with 0s to struct size
-                # prev code was np.array([pwLen], dtype=np.uint32), this ultimately is equivalent
-                pwArray.extend(pwLen.to_bytes(wordSize, 'little')+pw+(b"\x00"* (inBufSize_bytes - pwLen)))
-                
-            if chunkSize == 0:
-                break
-            # print("Chunksize = {}".format(chunkSize))
-            # Convert the pwArray into a numpy array, just the once.
-            # Declare the numpy array for the digest output
-            pwArray = np.frombuffer(pwArray, dtype=self.wordType)
-            result = np.zeros(outBufferSize * chunkSize, dtype=self.wordType)
-            result_byte_array = np.zeros(chunkSize,dtype=np.ubyte)
+            
+            last_hash_array = np.frombuffer(last_hash,dtype=np.ubyte)
+            last_hash_size_uint = np.uint32(len(last_hash))
+            start_uint = np.uint32(i)
+            result = np.zeros(outBufferSize * workgroup_size, dtype=self.wordType)
+            result_byte_array = np.zeros(workgroup_size,dtype=np.ubyte)
             expected_hash_array = np.frombuffer(expected_hash,dtype=np.ubyte)
+
 
             
             # Allocate memory for variables on the device
-            pass_g = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=pwArray)
+            last_hash_buffer = cl.Buffer(ctx,
+                                         cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR,
+                                         hostbuf=last_hash_array)
             result_g = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, result.nbytes)
             result_byte_array_buffer = cl.Buffer(ctx,cl.mem_flags.WRITE_ONLY, result_byte_array.nbytes)
             expected_hash_buffer = cl.Buffer(ctx,
@@ -235,25 +225,11 @@ class opencl_interface:
                                              hostbuf=expected_hash_array)
 
             # Call Kernel. Automatically takes care of block/grid distribution
-            pwdim = (chunkSize,)
+            pwdim = (workgroup_size,)
+           
+            func(self, pwdim, last_hash_buffer,last_hash_size_uint, result_g, result_byte_array_buffer, expected_hash_buffer,start_uint)
 
-            #print('Start job')
-            # Main function callback : could adapt to pass further data
-            func(self, pwdim, pass_g, result_g, result_byte_array_buffer, expected_hash_buffer)
-            #print('End job')
-
-            # Read the results back into our array of int32s, then hexlify
-            # Some inefficiency here, unavoidable using hexlify
-            #print('Start enqueue')
             cl.enqueue_copy(self.queue, result_byte_array, result_byte_array_buffer)
-            #cl.enqueue_copy(self.queue, result, result_g)
-            #print('End enqueue')
-
-            # Chop up into the individual hash digests, then trim to necessary hash length.
-            #results = []
-            #for i in range(0, len(result), outBufSize_bytes//bufStructs.wordSize):
-            #    v=bytes(result[i:i + outBufSize_bytes//bufStructs.wordSize])
-            #    results.append(v)
 
             yield result_byte_array
 
@@ -312,16 +288,16 @@ class opencl_algos:
         prg=self.opencl_ctx.compile(bufStructs, 'sha1.cl', option)
         return [prg, bufStructs]
 
-    def cl_sha1(self, ctx, passwordlist, expected_hash):
+    def cl_sha1(self, ctx, last_hash, expected_hash, start, end):
         # self.cl_sha1_init()
         prg = ctx[0]
         bufStructs = ctx[1]
-        def func(s, pwdim, pass_g, result_g, result_bytes_array, expected_hash):
-            prg.hash_main(s.queue, pwdim, None, pass_g, result_g, result_bytes_array,expected_hash)
+        def func(s, pwdim, last_hash,last_hash_size, result_g, result_bytes_array, expected_hash, start):
+            prg.hash_main(s.queue, pwdim, None, last_hash,last_hash_size,start, result_g, result_bytes_array,expected_hash)
             
-        to_return = np.zeros(len(passwordlist),dtype=np.ubyte)
+        to_return = np.zeros(end-start,dtype=np.ubyte)
         starting_point = 0
-        for data in self.opencl_ctx.run(bufStructs, func, iter(passwordlist), expected_hash, mdPad_64_func):
+        for data in self.opencl_ctx.run(bufStructs, func, None, expected_hash, mdPad_64_func, last_hash, start, end):
             to_return[starting_point:starting_point+len(data)] = data
             starting_point += len(data)
         return to_return
