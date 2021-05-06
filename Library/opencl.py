@@ -1,41 +1,42 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+'''
+    SHA1 PyOpenCl implementation
+    MIT License
+    Implementation was confirmed to work with Intel OpenCL on Intel(R) HD Graphics 520 and Intel(R) Core(TM) i5-6200U CPU
+'''
+
+from Library.buffer_structs import buffer_structs
+import pyopencl as cl
+import numpy as np
+import binascii
+from binascii import hexlify
 import os
+from itertools import chain, repeat, zip_longest
 from hashlib import pbkdf2_hmac
 from binascii import unhexlify
 from collections import deque
-from itertools import chain, repeat, zip_longest
-import numpy as np
-import pyopencl as cl
-from Library.buffer_structs import buffer_structs
+import time
 import os, sys, inspect
+
 current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parent_dir = os.path.dirname(current_dir)
-
-"""
-    SHA1 PyOpenCl implementation
-    MIT License
-    Implementation was confirmed to work with
-    Intel OpenCL on Intel(R) HD Graphics 520 and Intel(R) Core(TM) i5-6200U CPU and GeForce RTX 3080
-"""
 
 # Corresponding to opencl (CAN'T BE CHANGED):
 r = 8
 BLOCK_LEN_BYTES = 128 * r
 
-
 # Little helper, (22,5) -> 5,5,5,5,2.  itertools is bae
-def take_in_chunks(n, d):
+def takeInChunks(n,d):
     assert d > 0 and n >= 0
-    return chain(repeat(d, n // d), filter(lambda x: x != 0, [n % d]))
+    return chain(repeat(d, n // d), filter(lambda x:x!=0, [n % d]))
 def printif(b, s):
     if b:
         print(s)
 
 class opencl_interface:
-    debug = False
-    inv_memory_density = 1
-
+    debug=False
+    inv_memory_density=1
     # Initialiser for the key properties
     #   pbkdf related initialisation removed, will reappear somewhere else
     def __init__(self, platformNum, debug=0, write_combined_file=False, maxWorkgroupSize=60000, inv_memory_density=1,
@@ -87,6 +88,7 @@ class opencl_interface:
         # Set the debug flags
         os.environ['PYOPENCL_COMPILER_OUTPUT'] = str(debug)
         self.write_combined_file = write_combined_file
+
 
     def compile(self, bufferStructsObj, library_file, footer_file=None, N=15, invMemoryDensity=2):
         assert type(N) == int
@@ -172,19 +174,19 @@ class opencl_interface:
     def run(self, 
             bufStructs, 
             func, 
-            pwdIter, 
-            expected_hash, 
+            pwdIter,
+            expected_hash,
             paddedLenFunc=None):
-        # PaddedLenFunc is just for checking: lower bound with original length if not supplied
+
         wordType=self.wordType
         wordSize=self.wordSize
         ctx=self.ctx
         queue=self.queue
         hashBlockSize_bits=bufStructs.hashBlockSize_bits
-        if not paddedLenFunc:
-            paddedLenFunc = lambda x, bs: x
 
-        # Checks on list : not possible now we have iters!
+        # PaddedLenFunc is just for checking: lower bound with original length if not supplied
+        if not paddedLenFunc: paddedLenFunc = lambda x,bs:x
+        # Checks on password list : not possible now we have iters!
 
         inBufSize_bytes = bufStructs.inBufferSize_bytes
         outBufSize_bytes = bufStructs.outBufferSize_bytes
@@ -195,7 +197,6 @@ class opencl_interface:
             # Moved to bytearray initially, avoiding copying and above all
             #   'np.append' which is horrific
             pwArray = bytearray()
-
             # For each password in our chunk, process it into pwArray, with length first
             # Notice that this lines up with the struct declared in the .cl file!
             chunkSize = self.workgroupsize
@@ -213,40 +214,47 @@ class opencl_interface:
                 # Add the length to our pwArray, then pad with 0s to struct size
                 # prev code was np.array([pwLen], dtype=np.uint32), this ultimately is equivalent
                 pwArray.extend(pwLen.to_bytes(wordSize, 'little')+pw+(b"\x00"* (inBufSize_bytes - pwLen)))
-
+                
             if chunkSize == 0:
                 break
             # print("Chunksize = {}".format(chunkSize))
-
             # Convert the pwArray into a numpy array, just the once.
             # Declare the numpy array for the digest output
-            pwArray = np.frombuffer(pwArray, dtype=wordType)
-            result = np.zeros(outBufferSize * chunkSize, dtype=wordType)
+            pwArray = np.frombuffer(pwArray, dtype=self.wordType)
+            result = np.zeros(outBufferSize * chunkSize, dtype=self.wordType)
             result_byte_array = np.zeros(chunkSize,dtype=np.ubyte)
-            expected_hash_array = np.frombuffer(expected_hash,dtype=np.ubyte)          
+            expected_hash_array = np.frombuffer(expected_hash,dtype=np.ubyte)
 
+            
             # Allocate memory for variables on the device
             pass_g = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=pwArray)
             result_g = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, result.nbytes)
-            result_byte_array_buffer = cl.Buffer(self.ctx,cl.mem_flags.WRITE_ONLY, result_byte_array.nbytes)
-            expected_hash_buffer = cl.Buffer(self.ctx,
+            result_byte_array_buffer = cl.Buffer(ctx,cl.mem_flags.WRITE_ONLY, result_byte_array.nbytes)
+            expected_hash_buffer = cl.Buffer(ctx,
                                              cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR,
                                              hostbuf=expected_hash_array)
 
             # Call Kernel. Automatically takes care of block/grid distribution
             pwdim = (chunkSize,)
 
+            #print('Start job')
             # Main function callback : could adapt to pass further data
             func(self, pwdim, pass_g, result_g, result_byte_array_buffer, expected_hash_buffer)
+            #print('End job')
 
             # Read the results back into our array of int32s, then hexlify
             # Some inefficiency here, unavoidable using hexlify
+            #print('Start enqueue')
             cl.enqueue_copy(self.queue, result_byte_array, result_byte_array_buffer)
-            #cl.enqueue_copy(queue, result, result_g)
+            #cl.enqueue_copy(self.queue, result, result_g)
+            #print('End enqueue')
 
             # Chop up into the individual hash digests, then trim to necessary hash length.
+            #results = []
+            #for i in range(0, len(result), outBufSize_bytes//bufStructs.wordSize):
+            #    v=bytes(result[i:i + outBufSize_bytes//bufStructs.wordSize])
+            #    results.append(v)
 
-            # Yield this block of results
             yield result_byte_array
 
         # No main return
@@ -268,52 +276,52 @@ class opencl_interface:
                 print("Using {} cores on device with global memory {}, = {}%".format(
                     coresOnDevice, device.global_mem_size, percentUsage
                 ))
-            wgSize += coresOnDevice
+            wgSize += device.max_work_group_size#coresOnDevice
 
         if self.debug == 1:
             print("Workgroup size determined as {}".format(wgSize))
 
         return wgSize
 
-def mdpad_64_func(pwdLen, blockSize):
-    # both parameters in bytes
-    # length appended as a 64-bit integer
-    llen = (pwdLen + 1 + 8)
-    llen += (-llen) % blockSize
-    return llen
-
-
-def concat(ll):
-    return [obj for lval in ll for obj in lval]
+def mdPad_64_func(self, pwdLen, blockSize):
+        # both parameters in bytes
+        # length appended as a 64-bit integer
+        l = (pwdLen + 1 + 8)
+        l += (-l) % blockSize
+        return l
 
 
 class opencl_algos:
     def __init__(self, platform, debug, write_combined_file, inv_memory_density=1, openclDevice = 0):
-        if not debug:
-            debug = 0
+        if debug==False:
+            debug=0
         self.opencl_ctx = opencl_interface(platform, debug, write_combined_file, openclDevice = openclDevice)
-        self.platform_number = platform
-        self.inv_memory_density = inv_memory_density
-        self.max_out_bytes=0
+        self.platform_number=platform
+        self.inv_memory_density=inv_memory_density
 
-    # def mdPadLenFunc(self, pwdLen):
-    #    l = (pwdLen + 1 + 8)
-    #    l += (64 - (l % 64)) % 64
-    #    return l
+    def concat(self, ll):
+        return [obj for l in ll for obj in l]
+
+
+
 
     def cl_sha1_init(self, option=""):
         bufStructs = buffer_structs()
         bufStructs.specifySHA1()
         assert bufStructs.wordSize == 4  # set when you specify sha1
-        prg = self.opencl_ctx.compile(bufStructs, 'sha1.cl', option)
+        prg=self.opencl_ctx.compile(bufStructs, 'sha1.cl', option)
         return [prg, bufStructs]
 
     def cl_sha1(self, ctx, passwordlist, expected_hash):
         # self.cl_sha1_init()
         prg = ctx[0]
         bufStructs = ctx[1]
-
         def func(s, pwdim, pass_g, result_g, result_bytes_array, expected_hash):
-            prg.hash_main(s.queue, pwdim, None, pass_g, result_g, result_bytes_array, expected_hash)
-
-        return concat(self.opencl_ctx.run(bufStructs, func, iter(passwordlist), expected_hash, mdpad_64_func))
+            prg.hash_main(s.queue, pwdim, None, pass_g, result_g, result_bytes_array,expected_hash)
+            
+        to_return = np.zeros(len(passwordlist),dtype=np.ubyte)
+        starting_point = 0
+        for data in self.opencl_ctx.run(bufStructs, func, iter(passwordlist), expected_hash, mdPad_64_func):
+            to_return[starting_point:starting_point+len(data)] = data
+            starting_point += len(data)
+        return to_return
