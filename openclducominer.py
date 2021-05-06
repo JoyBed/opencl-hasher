@@ -25,8 +25,8 @@ soc = socket.socket()
 debug = 0
 write_combined_file = True
 
-def sha1(opencl_algo, ctx, hash1):
-    clresult=opencl_algo.cl_sha1(ctx,hash1)
+def sha1(opencl_algo, ctx, hash1, expected_hash):
+    clresult=opencl_algo.cl_sha1(ctx,hash1,expected_hash)
     if debug == 1:
         print("hashed " + str(clresult))
         print("hashed0" + str(clresult[0]))
@@ -112,10 +112,10 @@ def main(argv):
         if difficulty*100 < job_amount:
             job_amount = difficulty*100
 
-        hashme = []
-        for i in range(job_amount):
-            hashme.append('')
-        hashme = numpy.array(hashme,dtype=object)
+        
+        hashme = numpy.zeros(job_amount,dtype=object)
+
+        #hashme[0] = expected_hash
 
         hashingStartTime = time.time()
 
@@ -133,14 +133,21 @@ def main(argv):
                 print("job[1]" + str(job[1]))
             
             #real_time = time.time()
-            ducos = sha1(opencl_algos, ctx, hashme)
+            ducos = sha1(opencl_algos, ctx, hashme, expected_hash)
             #print('Real Time:',time.time()-real_time)
 
             if debug == 1:
                 time.sleep(2)
             #start_checks = time.time()
-            for i in range(job_amount):
-                if expected_hash == ducos[i]:
+            #for i in range(job_amount):
+            #    if expected_hash == ducos[i]:
+            #        hashingStopTime = time.time()
+            #        timeDifference = hashingStopTime - hashingStartTime
+            #        sendresult(result+i,timeDifference,difficulty)
+            #        stop_mining = True
+            #        break
+            for i in range(len(ducos)):
+                if ducos[i] == 1:
                     hashingStopTime = time.time()
                     timeDifference = hashingStopTime - hashingStartTime
                     sendresult(result+i,timeDifference,difficulty)
@@ -149,6 +156,7 @@ def main(argv):
             #print('Checks Time:',time.time()-start_checks)
             if stop_mining:
                 break
+        print('LOOP END')
             
             
 

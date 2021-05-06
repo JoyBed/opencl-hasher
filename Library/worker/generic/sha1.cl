@@ -284,13 +284,29 @@ def_hash(hash_priv_to_glbl, __private, __global)
 #undef F1
 #undef F2
                 
-__kernel void hash_main(__global const inbuf * inbuffer, __global outbuf * outbuffer)
+__kernel void hash_main(__global const inbuf * inbuffer, 
+    __global outbuf * outbuffer, 
+    __global uchar* result_buffer,
+    __global unsigned int* expected_hash)
 {
     unsigned int idx = get_global_id(0);
 
     // unsigned int hash[20/4]={0};
 
-    hash_global(inbuffer[idx].buffer, inbuffer[idx].length, outbuffer[idx].buffer);
+    hash_global(inbuffer[idx].buffer,
+                inbuffer[idx].length, 
+                outbuffer[idx].buffer);
+
+
+    unsigned char equal = 1;
+    for (unsigned char i = 0; i < 5; i++) {
+        if (outbuffer[idx].buffer[i] != expected_hash[i]) {
+            equal = 0;
+
+            break;
+        }
+    }
+    result_buffer[idx] = equal;
 
 /*     outbuffer[idx].buffer[0]=hash[0];
     outbuffer[idx].buffer[1]=hash[1];
