@@ -295,9 +295,10 @@ class opencl_algos:
         bufStructs = ctx[1]
         def func(s, pwdim, pass_g, result_g, result_bytes_array, expected_hash):
             prg.hash_main(s.queue, pwdim, None, pass_g, result_g, result_bytes_array,expected_hash)
-
-        return self.concat(self.opencl_ctx.run(bufStructs, 
-                                               func, 
-                                               iter(passwordlist), 
-                                               expected_hash, 
-                                               self.mdPad_64_func))
+            
+        to_return = np.zeros(len(passwordlist),dtype=np.ubyte)
+        starting_point = 0
+        for data in self.opencl_ctx.run(bufStructs, func, iter(passwordlist), expected_hash, self.mdPad_64_func):
+            to_return[starting_point:starting_point+len(data)] = data
+            starting_point += len(data)
+        return to_return
