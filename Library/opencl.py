@@ -186,15 +186,11 @@ class opencl_interface:
 
                 pwLen = len(pw)
                 # Now passing hash block size as a parameter.. could be None?
-                assert paddedLenFunc(pwLen, self.bufStructs.hashBlockSize_bits // 8) <= inBufSize_bytes, \
-                    "password #" + str(i) + ", '" + pw.decode() + "' (length " + str(pwLen) + ") exceeds the input buffer (length " + str(inBufSize_bytes) + ") when padded"
 
                 # Add the length to our pwArray, then pad with 0s to struct size
                 # prev code was np.array([pwLen], dtype=np.uint32), this ultimately is equivalent
                 pwArray.extend(pwLen.to_bytes(self.wordSize, 'little')+pw+(b"\x00"* (inBufSize_bytes - pwLen)))
-                #pwArray.extend((pwLen).to_bytes(self.wordSize,'little'))
-                #pwArray.extend(pw)
-                #pwArray.extend([0] * (inBufSize_bytes - pwLen))
+                
             if chunkSize == 0:
                 break
             # print("Chunksize = {}".format(chunkSize))
