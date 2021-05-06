@@ -39,7 +39,8 @@ class opencl_interface:
         self.platform_number=platformNum
         # Show devices for the platform, and adjust workgroup size
         # Create the context for GPU/CPU
-        self.workgroupsize = maxWorkgroupSize
+        self.workgroupsize = 0
+        self.computeunits = 0
         # Adjust workgroup size so that we don't run out of RAM:
         self.sworkgroupsize = self.determineWorkgroupsize(N_value)
         self.inv_memory_density=inv_memory_density
@@ -58,8 +59,17 @@ class opencl_interface:
             printif(debug, ' Device - Max clock frequency: {} MHz'.format(device.max_clock_frequency))
 
             assert device.endian_little == 1, "DEVICE is not little endian : pretty sure we rely on this!"
-            if (device.max_work_group_size<self.workgroupsize):
-                self.workgroupsize=(device.max_work_group_size)*8
+            if self.workgroupsize == 0:
+                self.workgroupsize = maxWorkgroupSize
+                self.workgroupsize = min(self.workgroupsize, device.max_work_group_size)
+            else:
+                self.workgroupsize = min(self.workgroupsize, device.max_work_group_size)
+            #if (device.max_work_group_size<self.workgroupsize):
+            #    self.workgroupsize=(device.max_work_group_size)*8
+            if self.computeunits == 0:
+                self.computeunits = device.max_compute_units
+            else:
+                self.computeunits = min(self.computeunits, device.max_compute_units)
         printif(debug, "\nUsing work group size of %d\n" % self.workgroupsize)
 
         # Set the debug flags
@@ -181,9 +191,10 @@ class opencl_interface:
 
                 # Add the length to our pwArray, then pad with 0s to struct size
                 # prev code was np.array([pwLen], dtype=np.uint32), this ultimately is equivalent
-                pwArray.extend((pwLen).to_bytes(self.wordSize,'little'))
-                pwArray.extend(pw)
-                pwArray.extend([0] * (inBufSize_bytes - pwLen))
+                pwArray.extend(pwLen.to_bytes(self.wordSize, 'little')+pw+(b"\x00"* (inBufSize_bytes - pwLen)))
+                #pwArray.extend((pwLen).to_bytes(self.wordSize,'little'))
+                #pwArray.extend(pw)
+                #pwArray.extend([0] * (inBufSize_bytes - pwLen))
             if chunkSize == 0:
                 break
             # print("Chunksize = {}".format(chunkSize))
