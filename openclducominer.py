@@ -146,13 +146,12 @@ def main(argv):
             #        sendresult(result+i,timeDifference,difficulty)
             #        stop_mining = True
             #        break
-            for i in range(len(ducos)):
-                if ducos[i] == 1:
-                    hashingStopTime = time.time()
-                    timeDifference = hashingStopTime - hashingStartTime
-                    sendresult(result+i,timeDifference,difficulty)
-                    stop_mining = True
-                    break
+            res = numpy.where(ducos==1)[0]
+            if len(res!=0):
+                hashingStopTime = time.time()
+                timeDifference = hashingStopTime - hashingStartTime
+                sendresult(result+res[0],timeDifference,difficulty)
+                stop_mining = True
             #print('Checks Time:',time.time()-start_checks)
             if stop_mining:
                 break
