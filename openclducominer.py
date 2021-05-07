@@ -162,11 +162,11 @@ def main(argv):
                 if debug == 1:
                     time.sleep(2)
 
-                res = numpy.where(ducos==1)[0]
-                if len(res!=0):
+                #res = numpy.where(ducos==1)[0]
+                if ducos != None:
                     hashingStopTime = time.time()
                     timeDifference = hashingStopTime - hashingStartTime
-                    sendresult(result+res[0],timeDifference,difficulty)
+                    sendresult(ducos,timeDifference,difficulty)
                     stop_mining = True
 
                 if stop_mining:
