@@ -288,10 +288,11 @@ __kernel void hash_main(__global unsigned char* last_hash,
     unsigned int last_hash_size,
     unsigned int start,
     __global outbuf * outbuffer, 
-    __global uchar* result_buffer,
+    __global unsigned int* result_buffer,
     __global unsigned int* expected_hash)
 {
-    unsigned int idx = get_global_id(0);
+    __local unsigned int idx;
+    idx = get_global_id(0);
 
     unsigned char string_to_hash[30];
      unsigned char number_string[10];
@@ -327,10 +328,7 @@ __kernel void hash_main(__global unsigned char* last_hash,
         string_to_hash[last_hash_size + i] = number_string[i];
     }
     full_size = last_hash_size + digits_count;
-    /*while (full_size % 4 != 0) {
-        string_to_hash[full_size] = 0;
-        full_size += 1;
-    }*/
+    
 
 
     hash_global(string_to_hash,
@@ -338,7 +336,8 @@ __kernel void hash_main(__global unsigned char* last_hash,
                 outbuffer[idx].buffer);
 
 
-    unsigned char equal = 1;
+    __local unsigned char equal;
+    equal = 1;
     for (unsigned char i = 0; i < 5; i++) {
         if (outbuffer[idx].buffer[i] != expected_hash[i]) {
             equal = 0;
@@ -346,14 +345,11 @@ __kernel void hash_main(__global unsigned char* last_hash,
             break;
         }
     }
-    result_buffer[idx] = equal;
-    /*for (unsigned int i = 0; i < full_size; i++) {
-        result_buffer[i] = string_to_hash[i];
-    }*/
 
-/*     outbuffer[idx].buffer[0]=hash[0];
-    outbuffer[idx].buffer[1]=hash[1];
-    outbuffer[idx].buffer[2]=hash[2];
-    outbuffer[idx].buffer[3]=hash[3];
-    outbuffer[idx].buffer[4]=hash[4]; */
+    if (equal == 1) {
+        result_buffer[0] = 1;
+        result_buffer[1] = start + idx;
+    }
+    //result_buffer[idx] = equal;
+    
 }
