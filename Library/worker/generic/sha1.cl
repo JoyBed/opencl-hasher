@@ -286,10 +286,11 @@ def_hash(hash_priv_to_glbl, __private, __global)
                 
 __kernel void hash_main(__global unsigned char* last_hash, 
     unsigned int last_hash_size,
-    unsigned int start,
-    __global unsigned int* result_buffer,
+    unsigned long start,
+    __global unsigned long* result_buffer,
     __global unsigned int* expected_hash,
-    unsigned int batch_size)
+    unsigned long batch_size,
+    __global unsigned char* found)
 {
     unsigned int idx;
     idx = get_global_id(0);
@@ -309,7 +310,9 @@ __kernel void hash_main(__global unsigned char* last_hash,
     }
     for (unsigned int batch_counter = 0; batch_counter < batch_size; batch_counter++) {
         result = start + idx*batch_size + batch_counter;
-
+        if (found[0] == 1) {
+            break;
+        }
         // counting digits
         digits_count = 0;
         while (result > 0) {
@@ -362,10 +365,10 @@ __kernel void hash_main(__global unsigned char* last_hash,
         }
 
 
-
         if (equal == 1) {
             result_buffer[0] = 1;
             result_buffer[1] = start + idx * batch_size + batch_counter;
+            found[0] = 1;
             break;
         }
     }
