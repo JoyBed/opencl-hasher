@@ -312,7 +312,6 @@ class opencl_algos:
         def func(s, pwdim, last_hash,last_hash_size, result_bytes_array, expected_hash, start):
             prg.hash_main(s.queue, pwdim, None, last_hash,last_hash_size,start, result_bytes_array,expected_hash)
             
-        to_return = np.zeros(end-start,dtype=np.ubyte)
         starting_point = 0
         return self.opencl_ctx.run(bufStructs, func, None, expected_hash, mdPad_64_func, last_hash, start, end)
 
