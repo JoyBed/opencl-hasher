@@ -53,7 +53,7 @@ class opencl_interface:
         # Show devices for the platform, and adjust workgroup size
         # Create the context for GPU/CPU
         # Adjust workgroup size so that we don't run out of RAM:
-        #self.sworkgroupsize = self.determine_workgroupsize(N_value)
+
         self.inv_memory_density = inv_memory_density
         self.ctx = cl.Context(devices)
         self.queue = cl.CommandQueue(self.ctx, devices[openclDevice])
@@ -69,22 +69,10 @@ class opencl_interface:
             printif(debug, ' Device - Local memory size:  {}'.format(device.local_mem_size))
             printif(debug, ' Device - Max clock frequency: {} MHz'.format(device.max_clock_frequency))
 
-            #assert device.endian_little == 1, "DEVICE is not little endian : pretty sure we rely on this!"
-            #if self.workgroupsize == 0:
-            #    self.workgroupsize = maxWorkgroupSize
-            #    self.workgroupsize = min(self.workgroupsize, device.max_work_group_size)
-            #else:
-            #    self.workgroupsize = min(self.workgroupsize, device.max_work_group_size)
-
-            #if self.computeunits == 0:
-            #    self.computeunits = device.max_compute_units
-            #else:
-            #    self.computeunits = min(self.computeunits, device.max_compute_units)
+            self.workgroupsize = device.max_work_group_size
+            
             self.available_memmory += device.global_mem_size
-            # if device.max_work_group_size<self.workgroupsize:
-            #    self.workgroupsize=device.max_work_group_size
 
-        #self.workgroupsize *= 1000
         printif(debug, "\nUsing work group size of %d\n" % self.workgroupsize)
 
         # Set the debug flags
@@ -178,27 +166,24 @@ class opencl_interface:
             paddedLenFunc,
             last_hash,
             start,
-            end):
+            end,
+            max_batch_size):
+        '''
+        if max_batch_size == -1 - will use maximum available batch size
+        '''
 
-        wordType=self.wordType
-        wordSize=self.wordSize
+        #wordType=self.wordType
+        #wordSize=self.wordSize
         ctx=self.ctx
         queue=self.queue
-        hashBlockSize_bits=bufStructs.hashBlockSize_bits
+        #hashBlockSize_bits=bufStructs.hashBlockSize_bits
 
-        # PaddedLenFunc is just for checking: lower bound with original length if not supplied
-        if not paddedLenFunc: paddedLenFunc = lambda x,bs:x
-        # Checks on password list : not possible now we have iters!
+        #if not paddedLenFunc: paddedLenFunc = lambda x,bs:x
 
-        inBufSize_bytes = bufStructs.inBufferSize_bytes
-        outBufSize_bytes = bufStructs.outBufferSize_bytes
-        outBufferSize = bufStructs.outBufferSize * 2
+        #inBufSize_bytes = bufStructs.inBufferSize_bytes
+        #outBufSize_bytes = bufStructs.outBufferSize_bytes
+        #outBufferSize = bufStructs.outBufferSize * 2
 
-        
-
-        self.workgroupsize = self.determine_workgroupsize(outBufSize_bytes,
-                                                           len(last_hash),
-                                                           len(expected_hash))
         # Allocate data
         last_hash_array = np.frombuffer(last_hash,dtype=np.ubyte)
         last_hash_size_uint = np.uint32(len(last_hash))     
@@ -215,23 +200,32 @@ class opencl_interface:
                                         cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR,
                                         hostbuf=expected_hash_array)
 
+        batch_size = ((end-start)//self.workgroupsize)+1
+        if max_batch_size != -1:
+            if batch_size > max_batch_size:
+                batch_size = max_batch_size
+        else:
+            print("USING MAX BATCH SIZE, F TO YOUR GPU")
 
-        chunkSize = self.workgroupsize
+        batch_size_uint = np.uint32(batch_size)
+
+        #debug = np.zeros(1,dtype = np.uint32)
+        #debug_buffer = cl.Buffer(ctx,cl.mem_flags.WRITE_ONLY,debug.nbytes)
+
         # Main loop is taking chunks of at most the workgroup size
-        for i in range(start,end,chunkSize):
+        for i in range(start,end,batch_size*self.workgroupsize):
             
-            workgroup_size = chunkSize
-            if i + workgroup_size>end:
-                workgroup_size = end-i
+            workgroup_size = self.workgroupsize
+            #if i + workgroup_size>end:
+            #    workgroup_size = end-i
              
             result_byte_array[0] = 0
             result_byte_array[1] = 1
 
 
             start_uint = np.uint32(i)
-            
-            if i+workgroup_size > 111802225 and i < 111802225:
-                a = 1+1
+            #if i+workgroup_size*batch_size > 111802225 and i < 111802225:
+            #    a = 1+1
 
             # Call Kernel. Automatically takes care of block/grid distribution
             pwdim = (workgroup_size,)
@@ -242,7 +236,8 @@ class opencl_interface:
                  last_hash_size_uint, 
                  result_byte_array_buffer, 
                  expected_hash_buffer,
-                 start_uint)
+                 start_uint,
+                 batch_size_uint)
 
             cl.enqueue_copy(self.queue, 
                             result_byte_array,
@@ -258,19 +253,7 @@ class opencl_interface:
         # No main return
         return None
 
-    def determine_workgroupsize(self,
-                                out_buf_size,
-                                last_hash_size,
-                                expected_hash_size):
-        actual_memmory = self.available_memmory - (last_hash_size + expected_hash_size)
-        a = out_buf_size*self.wordSize
-        b = 100
-        D = b*b+4*actual_memmory*(a+1)
-        
-        workgroup_size = (-b + math.sqrt(D))/(2*(a+1))
-        workgroup_size = int(workgroup_size)*100
-        #return 1024
-        return workgroup_size
+
 
         
 
@@ -305,13 +288,12 @@ class opencl_algos:
         prg=self.opencl_ctx.compile(bufStructs, 'sha1.cl', option)
         return [prg, bufStructs]
 
-    def cl_sha1(self, ctx, last_hash, expected_hash, start, end):
-        # self.cl_sha1_init()
+    def cl_sha1(self, ctx, last_hash, expected_hash, start, end, max_batch_size = 2):
         prg = ctx[0]
         bufStructs = ctx[1]
-        def func(s, pwdim, last_hash,last_hash_size, result_bytes_array, expected_hash, start):
-            prg.hash_main(s.queue, pwdim, None, last_hash,last_hash_size,start, result_bytes_array,expected_hash)
+        def func(s, pwdim, last_hash,last_hash_size, result_bytes_array, expected_hash, start, batch_size, debug_buffer=None):
+            prg.hash_main(s.queue, pwdim, None, last_hash,last_hash_size,start, result_bytes_array, expected_hash, batch_size)
             
         starting_point = 0
-        return self.opencl_ctx.run(bufStructs, func, None, expected_hash, mdPad_64_func, last_hash, start, end)
+        return self.opencl_ctx.run(bufStructs, func, None, expected_hash, mdPad_64_func, last_hash, start, end, max_batch_size)
 

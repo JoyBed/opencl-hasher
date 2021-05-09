@@ -288,7 +288,8 @@ __kernel void hash_main(__global unsigned char* last_hash,
     unsigned int last_hash_size,
     unsigned int start,
     __global unsigned int* result_buffer,
-    __global unsigned int* expected_hash)
+    __global unsigned int* expected_hash,
+    unsigned int batch_size)
 {
     unsigned int idx;
     idx = get_global_id(0);
@@ -299,68 +300,74 @@ __kernel void hash_main(__global unsigned char* last_hash,
     digits_count = 0;
      unsigned int result;
      unsigned int full_size;
-    result = start + idx;
+     unsigned char equal;
+    
     
     // copy last_hash to string_to_hash
     for (unsigned char i = 0; i < last_hash_size; i++) {
         string_to_hash[i] = last_hash[i];
     }
+    for (unsigned int batch_counter = 0; batch_counter < batch_size; batch_counter++) {
+        result = start + idx*batch_size + batch_counter;
 
-    // counting digits
-    while (result > 0) {
-        result /= 10;
-        digits_count++;
-    }
+        // counting digits
+        digits_count = 0;
+        while (result > 0) {
+            result /= 10;
+            digits_count++;
+        }
 
-    // converting integer to string representation
-    result = start + idx;   
-    // copy number string representation to string_to_hash
-    for (char i = digits_count-1; i > -1; i--) {
-        string_to_hash[last_hash_size + i] = '0' + (result % 10);
-        result /= 10;
-    }
-    full_size = last_hash_size + digits_count;
-    
-    // nulling rest of the array
-    for (unsigned char i = full_size; i < 52; i++) {
-        string_to_hash[i] = 0;
-    }
+        // converting integer to string representation
+        result = start + idx * batch_size + batch_counter;
+        // copy number string representation to string_to_hash
+        for (char i = digits_count - 1; i > -1; i--) {
+            string_to_hash[last_hash_size + i] = '0' + (result % 10);
+            result /= 10;
+        }
+        full_size = last_hash_size + digits_count;
 
-    //if (start + idx == 111802225) {
-    //    // debug copy
-    //    for (unsigned char i = 0; i < 52; i++) {
-    //        debug_buffer[i] = string_to_hash[i];
-    //    }
-    //    //debug_buffer[0] = full_size;
-    //}
+        // nulling rest of the array
+        for (unsigned char i = full_size; i < 52; i++) {
+            string_to_hash[i] = 0;
+        }
 
-    hash_private(string_to_hash,
-                    full_size, 
-                    outbuffer);
+        //if (start + idx * batch_size + batch_counter == 111802225) {
+        //    // debug copy
+        //    for (unsigned char i = 0; i < 52; i++) {
+        //        debug_buffer[i] = string_to_hash[i];
+        //    }
+        //    debug_buffer[0] = digits_count;
+        //}
 
-    //if (start + idx == 111802225) {
-    //    // debug copy
-    //    for (unsigned char i = 0; i < 5; i++) {
-    //        debug_buffer[i] = outbuffer[idx].buffer[i];
-    //    }
-    //    //debug_buffer[0] = full_size;
-    //}
+        hash_private(string_to_hash,
+            full_size,
+            outbuffer);
 
-    unsigned char equal;
-    equal = 1;
-    for (unsigned char i = 0; i < 5; i++) {
-        if (outbuffer[i] != expected_hash[i]) {
-            equal = 0;
+        //if (start + idx * batch_size + batch_counter == 111802225) {
+        //    // debug copy
+        //    for (unsigned char i = 0; i < 5; i++) {
+        //        debug_buffer[i] = outbuffer[i];
+        //    }
+        //    //debug_buffer[0] = full_size;
+        //}
 
+        
+        equal = 1;
+        for (unsigned char i = 0; i < 5; i++) {
+            if (outbuffer[i] != expected_hash[i]) {
+                equal = 0;
+
+                break;
+            }
+        }
+
+
+
+        if (equal == 1) {
+            result_buffer[0] = 1;
+            result_buffer[1] = start + idx * batch_size + batch_counter;
             break;
         }
-    }
-
-  
-
-    if (equal == 1) {
-        result_buffer[0] = 1;
-        result_buffer[1] = start + idx;
     }
     //result_buffer[idx] = equal;
     
