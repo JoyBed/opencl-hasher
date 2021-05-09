@@ -144,33 +144,42 @@ def main(argv):
             hashingStartTime = time.time()
 
             real_difficulty = 100 * int(difficulty)+1
-
             stop_mining = False
-            for result in range(0,real_difficulty,job_amount):
+
+            ducos = sha1(opencl_algos, ctx, last_hash, expected_hash, 0, real_difficulty)
+            if ducos != None:
+                hashingStopTime = time.time()
+                timeDifference = hashingStopTime - hashingStartTime
+                sendresult(ducos,timeDifference,difficulty)
+                stop_mining = True
+            #stop_mining = False
+            #for result in range(0,real_difficulty,job_amount):
             
-                plus_amount = job_amount
-                if result+job_amount>real_difficulty:
-                    plus_amount = real_difficulty - result
+            #    plus_amount = job_amount
+            #    if result+job_amount>real_difficulty:
+            #        plus_amount = real_difficulty - result
 
-                if debug == 1:
-                    print("hashme " + str(type(hashme)) + " " + str(hashme))
-                    print("job[1]" + str(job[1]))
+            #    if debug == 1:
+            #        print("hashme " + str(type(hashme)) + " " + str(hashme))
+            #        print("job[1]" + str(job[1]))
             
 
-                ducos = sha1(opencl_algos, ctx, last_hash, expected_hash, result, result+plus_amount)
+            #    ducos = sha1(opencl_algos, ctx, last_hash, expected_hash, result, result+plus_amount)
 
-                if debug == 1:
-                    time.sleep(2)
+            #    if debug == 1:
+            #        time.sleep(2)
 
-                #res = numpy.where(ducos==1)[0]
-                if ducos != None:
-                    hashingStopTime = time.time()
-                    timeDifference = hashingStopTime - hashingStartTime
-                    sendresult(ducos,timeDifference,difficulty)
-                    stop_mining = True
+            #    #res = numpy.where(ducos==1)[0]
+            #    if ducos != None:
+            #        hashingStopTime = time.time()
+            #        timeDifference = hashingStopTime - hashingStartTime
+            #        sendresult(ducos,timeDifference,difficulty)
+            #        stop_mining = True
 
-                if stop_mining:
-                    break
+            #    if stop_mining:
+            #        break
+            if not stop_mining:
+                print(job)
 
             
             

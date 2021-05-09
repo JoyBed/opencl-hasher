@@ -202,23 +202,19 @@ class opencl_interface:
         # Allocate data
         last_hash_array = np.frombuffer(last_hash,dtype=np.ubyte)
         last_hash_size_uint = np.uint32(len(last_hash))     
-        result = np.zeros(outBufferSize * self.workgroupsize, dtype=self.wordType)
         result_byte_array = np.zeros(2,dtype=np.uint32)
         expected_hash_array = np.frombuffer(expected_hash,dtype=np.ubyte)
 
-            
         # Allocate memory for variables on the device
         last_hash_buffer = cl.Buffer(ctx,
                                      cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR,
                                      hostbuf=last_hash_array)
-        result_g = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, result.nbytes)
         result_byte_array_buffer = cl.Buffer(ctx,cl.mem_flags.WRITE_ONLY | cl.mem_flags.COPY_HOST_PTR,
-                                            hostbuf=result_byte_array)
+                                             hostbuf=result_byte_array)
         expected_hash_buffer = cl.Buffer(ctx,
-                                         cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR,
-                                         hostbuf=expected_hash_array)
+                                        cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR,
+                                        hostbuf=expected_hash_array)
 
-        
 
         chunkSize = self.workgroupsize
         # Main loop is taking chunks of at most the workgroup size
@@ -227,16 +223,16 @@ class opencl_interface:
             workgroup_size = chunkSize
             if i + workgroup_size>end:
                 workgroup_size = end-i
-
-                result = np.zeros(outBufferSize * workgroup_size, dtype=self.wordType)
-                result_g = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, result.nbytes)
-
-              
+             
             result_byte_array[0] = 0
             result_byte_array[1] = 1
 
+
             start_uint = np.uint32(i)
             
+            if i+workgroup_size > 111802225 and i < 111802225:
+                a = 1+1
+
             # Call Kernel. Automatically takes care of block/grid distribution
             pwdim = (workgroup_size,)
            
@@ -244,7 +240,6 @@ class opencl_interface:
                  pwdim,
                  last_hash_buffer,
                  last_hash_size_uint, 
-                 result_g, 
                  result_byte_array_buffer, 
                  expected_hash_buffer,
                  start_uint)
@@ -252,11 +247,13 @@ class opencl_interface:
             cl.enqueue_copy(self.queue, 
                             result_byte_array,
                            result_byte_array_buffer)
+            #cl.enqueue_copy(self.queue,
+            #                debug,
+            #                debug_buffer)
             
             if result_byte_array[0] == 1:
                 return result_byte_array[1]
 
-            #yield result_byte_array
 
         # No main return
         return None
@@ -272,7 +269,7 @@ class opencl_interface:
         
         workgroup_size = (-b + math.sqrt(D))/(2*(a+1))
         workgroup_size = int(workgroup_size)*100
-
+        #return 1024
         return workgroup_size
 
         
@@ -312,12 +309,10 @@ class opencl_algos:
         # self.cl_sha1_init()
         prg = ctx[0]
         bufStructs = ctx[1]
-        def func(s, pwdim, last_hash,last_hash_size, result_g, result_bytes_array, expected_hash, start):
-            prg.hash_main(s.queue, pwdim, None, last_hash,last_hash_size,start, result_g, result_bytes_array,expected_hash)
+        def func(s, pwdim, last_hash,last_hash_size, result_bytes_array, expected_hash, start):
+            prg.hash_main(s.queue, pwdim, None, last_hash,last_hash_size,start, result_bytes_array,expected_hash)
             
         to_return = np.zeros(end-start,dtype=np.ubyte)
         starting_point = 0
         return self.opencl_ctx.run(bufStructs, func, None, expected_hash, mdPad_64_func, last_hash, start, end)
-            #to_return[starting_point:starting_point+len(data)] = data
-            #starting_point += len(data)
-        #return to_return
+

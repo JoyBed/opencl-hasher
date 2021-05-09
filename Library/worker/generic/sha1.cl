@@ -287,15 +287,16 @@ def_hash(hash_priv_to_glbl, __private, __global)
 __kernel void hash_main(__global unsigned char* last_hash, 
     unsigned int last_hash_size,
     unsigned int start,
-    __global outbuf * outbuffer, 
+    //__global outbuf * outbuffer, 
     __global unsigned int* result_buffer,
     __global unsigned int* expected_hash)
 {
-    __local unsigned int idx;
+    unsigned int idx;
     idx = get_global_id(0);
 
-    unsigned char string_to_hash[30];
-     unsigned char number_string[10];
+    __private unsigned int outbuffer[5];
+    __private unsigned char string_to_hash[50];
+    __private unsigned char number_string[10];
      unsigned int digits_count;
      unsigned int digits_count_copy;
     digits_count = 0;
@@ -329,22 +330,42 @@ __kernel void hash_main(__global unsigned char* last_hash,
     }
     full_size = last_hash_size + digits_count;
     
+    // nulling rest of the array
+    for (unsigned char i = full_size; i < 52; i++) {
+        string_to_hash[i] = 0;
+    }
 
+    //if (start + idx == 111802225) {
+    //    // debug copy
+    //    for (unsigned char i = 0; i < 52; i++) {
+    //        debug_buffer[i] = string_to_hash[i];
+    //    }
+    //    //debug_buffer[0] = full_size;
+    //}
 
-    hash_global(string_to_hash,
-                full_size, 
-                outbuffer[idx].buffer);
+    hash_private(string_to_hash,
+                    full_size, 
+                    outbuffer);
 
+    //if (start + idx == 111802225) {
+    //    // debug copy
+    //    for (unsigned char i = 0; i < 5; i++) {
+    //        debug_buffer[i] = outbuffer[idx].buffer[i];
+    //    }
+    //    //debug_buffer[0] = full_size;
+    //}
 
-    __local unsigned char equal;
+    unsigned char equal;
     equal = 1;
     for (unsigned char i = 0; i < 5; i++) {
-        if (outbuffer[idx].buffer[i] != expected_hash[i]) {
+        if (outbuffer[i] != expected_hash[i]) {
             equal = 0;
 
             break;
         }
     }
+
+  
 
     if (equal == 1) {
         result_buffer[0] = 1;
