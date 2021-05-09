@@ -287,7 +287,6 @@ def_hash(hash_priv_to_glbl, __private, __global)
 __kernel void hash_main(__global unsigned char* last_hash, 
     unsigned int last_hash_size,
     unsigned int start,
-    //__global outbuf * outbuffer, 
     __global unsigned int* result_buffer,
     __global unsigned int* expected_hash)
 {
@@ -295,15 +294,17 @@ __kernel void hash_main(__global unsigned char* last_hash,
     idx = get_global_id(0);
 
     __private unsigned int outbuffer[5];
-    __private unsigned char string_to_hash[50];
-    __private unsigned char number_string[10];
+    __private unsigned char string_to_hash[52];
      unsigned int digits_count;
-     unsigned int digits_count_copy;
     digits_count = 0;
      unsigned int result;
      unsigned int full_size;
     result = start + idx;
     
+    // copy last_hash to string_to_hash
+    for (unsigned char i = 0; i < last_hash_size; i++) {
+        string_to_hash[i] = last_hash[i];
+    }
 
     // counting digits
     while (result > 0) {
@@ -312,21 +313,11 @@ __kernel void hash_main(__global unsigned char* last_hash,
     }
 
     // converting integer to string representation
-    digits_count_copy = digits_count;
-    result = start + idx;
-    while (digits_count_copy >0) {
-        number_string[digits_count_copy - 1] = '0'+(result % 10);
-        result /= 10;
-        digits_count_copy -= 1;
-    }
-    
-    // copy last_hash to string_to_hash
-    for (unsigned char i = 0; i < last_hash_size; i++) {
-        string_to_hash[i] = last_hash[i];
-    }
+    result = start + idx;   
     // copy number string representation to string_to_hash
-    for (unsigned char i = 0; i < digits_count; i++) {
-        string_to_hash[last_hash_size + i] = number_string[i];
+    for (char i = digits_count-1; i > -1; i--) {
+        string_to_hash[last_hash_size + i] = '0' + (result % 10);
+        result /= 10;
     }
     full_size = last_hash_size + digits_count;
     
