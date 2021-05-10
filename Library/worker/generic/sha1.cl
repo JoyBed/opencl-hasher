@@ -299,7 +299,7 @@ __kernel void hash_main(__global unsigned char* last_hash,
     __private unsigned char string_to_hash[60];
      unsigned int digits_count;
     digits_count = 0;
-     unsigned int result;
+     unsigned long result;
      unsigned int full_size;
      unsigned char equal;
     
@@ -308,7 +308,7 @@ __kernel void hash_main(__global unsigned char* last_hash,
     for (unsigned char i = 0; i < last_hash_size; i++) {
         string_to_hash[i] = last_hash[i];
     }
-    for (unsigned int batch_counter = 0; batch_counter < batch_size; batch_counter++) {
+    for (unsigned long batch_counter = 0; batch_counter < batch_size; batch_counter++) {
         result = start + idx*batch_size + batch_counter;
         if (found[0] == 1) {
             break;
