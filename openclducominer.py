@@ -102,7 +102,7 @@ def sendresult(result,timeDifference,difficulty,shares) -> bool:
         ))
 
     print(tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
-    print('\n'[)
+    print('\n')
     # If result was good
     if feedback == "GOOD":
         print(Fore.GREEN + "Accepted share #" + str(shares) + " | Good Job  Result: ",result,"Hashrate: ",int(hashrate/1000000) ,"MH/s ","Difficulty: ",difficulty)
