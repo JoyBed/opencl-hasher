@@ -8,3 +8,13 @@ Requirements:
     pybind11
   
     pyopencl
+    
+    binascii
+    
+    colorama
+    
+    psutil
+    
+    gputil
+    
+    multithreading
