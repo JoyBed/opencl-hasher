@@ -7,6 +7,4 @@ Requirements:
   
     pybind11
   
-    pycryptodome
-  
     pyopencl
