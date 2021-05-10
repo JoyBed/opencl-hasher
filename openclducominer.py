@@ -9,7 +9,7 @@ import urllib.request
 import binascii
 import functools, operator
 import colorama
-# import psutil # Add more about this later (for gpu temps, i will learn how to code this in later, i may not display this)
+#import psutil 
 from binascii import hexlify, unhexlify
 from Library import opencl
 from Library.opencl_information import opencl_information
@@ -18,7 +18,10 @@ from colorama import Fore, Back, Style
 import pyopencl
 import numpy
 import traceback
-
+#import configparser    #will work on later, needs to be fixed. I (primitt) big dumb
+#config = ConfigParser()
+#config.read('config.ini')
+#name = config['test']['username']
 colorama.init()
 
 soc = socket.socket()
@@ -31,7 +34,7 @@ def reconnect():
     soc.connect((pool_address, int(pool_port)))
     soc.settimeout(20)
     server_version = soc.recv(3).decode()  # Get server version
-    print(Fore.RED + "\nServer is on version", server_version)
+    print(Fore.RED + "\nServer is on version:", server_version)
 
 debug = 0
 write_combined_file = True
@@ -61,10 +64,10 @@ def sendresult(result,timeDifference,difficulty) -> bool:
         return to_return
     # If result was good
     if feedback == "GOOD":
-        print(Fore.GREEN + "Accepted share Good Job  Result: ",result,"Hashrate: ",int(hashrate/1000000) ,"MH/s ","Difficulty: ",difficulty)
+        print(Fore.GREEN + "Accepted share Good Job | Result: ",result,"Hashrate: ",int(hashrate/1000000) ,"MH/s ","Difficulty: ",difficulty)
     # If result was incorrect
     elif feedback == "BAD":
-        print(Fore.RED + "Rejected share HAHA YOUR BAD  Result: ",result,"Hashrate: ",int(hashrate/1000000),"MH/s ","Difficulty: ",difficulty)
+        print(Fore.RED + "Rejected share HAHA YOUR BAD | Result: ",result,"Hashrate: ",int(hashrate/1000000),"MH/s ","Difficulty: ",difficulty)
     elif feedback == '':
         to_return = False
     return to_return
