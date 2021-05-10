@@ -296,7 +296,7 @@ __kernel void hash_main(__global unsigned char* last_hash,
     idx = get_global_id(0);
 
     __private unsigned int outbuffer[5];
-    __private unsigned char string_to_hash[52];
+    __private unsigned char string_to_hash[60];
      unsigned int digits_count;
     digits_count = 0;
      unsigned int result;
@@ -330,7 +330,7 @@ __kernel void hash_main(__global unsigned char* last_hash,
         full_size = last_hash_size + digits_count;
 
         // nulling rest of the array
-        for (unsigned char i = full_size; i < 52; i++) {
+        for (unsigned char i = full_size; i < 60; i++) {
             string_to_hash[i] = 0;
         }
 
