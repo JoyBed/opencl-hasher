@@ -9,12 +9,8 @@ Requirements:
   
     pyopencl
     
-    binascii
-    
     colorama
     
     psutil
     
     gputil
-    
-    multithreading
