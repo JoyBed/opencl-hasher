@@ -11,6 +11,122 @@
     hash array trimmed to size 5
 */
 
+unsigned long long count_digits(unsigned long input) {
+    // counting digits
+    if (input < 10000000000) {
+        // [10,1]
+        if (input < 100000) {
+            // [5,1]
+            if (input < 1000) {
+                // [3,1]
+                if (input < 100) {
+                    // [2,1]
+                    if (input < 10) {
+                        return 1;
+                    }
+                    else {
+                        return 2;
+                    }
+                }
+                else {
+                    return 3;
+                }
+            }
+            else {
+                if (input < 10000) {
+                    return 4;
+                }
+                else {
+                    return 5;
+                }
+
+            }
+        }
+        else {
+            // [10,6]
+            if (input < 100000000) {
+                // [8,6]
+                if (input < 10000000) {
+                    // [7,6]
+                    if (input < 1000000) {
+                        return 6;
+                    }
+                    else {
+                        return 7;
+                    }
+                }
+                else {
+                    return 8;
+                }
+            }
+            else {
+                if (input < 1000000000) {
+                    return 9;
+                }
+                else {
+                    return 10;
+                }
+            }
+        }
+    }
+    else {
+        // [20,11]
+        if (input < 1000000000000000) {
+            // [15,11]
+            if (input < 10000000000000) {
+                // [13,11]
+                if (input < 1000000000000) {
+                    if (input < 100000000000) {
+                        return 11;
+                    }
+                    else {
+                        return 12;
+                    }
+                }
+                else {
+                    return 13;
+                }
+            }
+            else {
+                //[15,14]
+                if (input < 100000000000000) {
+                    return 14;
+                }
+                else {
+                    return 15;
+                }
+            }
+        }
+        else {
+            // [20,16]
+            if (input < 1000000000000000000) {
+                // [18,16]
+                if (input < 100000000000000000) {
+                    // [17,16]
+                    if (input < 10000000000000000) {
+                        return 16;
+                    }
+                    else {
+                        return 17;
+                    }
+                }
+                else {
+                    return 18;
+                }
+            }
+            else {
+                // [20,19]
+                if (input < 10000000000000000000) {
+                    return 19;
+                }
+                else {
+                    return 20;
+                }
+            }
+        }
+    }
+}
+
 #define rotl32(a,n) rotate ((a), (n)) 
 
 #define mod(x,y) ((x)-((x)/(y)*(y)))
@@ -314,11 +430,7 @@ __kernel void hash_main(__global unsigned char* last_hash,
             break;
         }
         // counting digits
-        digits_count = 0;
-        while (result > 0) {
-            result /= 10;
-            digits_count++;
-        }
+        digits_count = count_digits(result);
 
         // converting integer to string representation
         result = start + idx * batch_size + batch_counter;
