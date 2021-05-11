@@ -90,38 +90,3 @@ typedef struct {
     word length; // in bytes
     word buffer[ctBufferSize];
 } ctbuf;
-
-
-
-
-// ========== Debugging function ============
-
-#ifdef DEBUG
-#if DEBUG
-
-    #define def_printFromWord(tag, funcName, end)               \
-    /* For printing the string of bytes stored in an array of words.
-    Option to print hex. */    \
-    static void funcName(tag const word *arr, const unsigned int len_bytes, const bool hex)\
-    {                                           \
-        for (int j = 0; j < len_bytes; j++){    \
-            word v = arr[j / wordSize];                 \
-            word r = mod(j,wordSize) * 8;                \
-            /* Prints little endian, since that's what we use */   \
-            v = (v >> r) & 0xFF;                \
-            if (hex) {                          \
-                printf("%02x", v);              \
-            } else {                            \
-                printf("%c", (char)v);          \
-            }                                   \
-        }                                       \
-        printf(end);                            \
-    }
-
-    def_printFromWord(__private, printFromWord, "")
-    def_printFromWord(__global, printFromWord_glbl, "")
-    def_printFromWord(__private, printFromWord_n, "\n")
-    def_printFromWord(__global, printFromWord_glbl_n, "\n")
-
-#endif
-#endif
