@@ -5,4 +5,4 @@ colorama
 psutil
 gputil
 tabulate
-threading
+multithreading
