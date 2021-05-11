@@ -10,4 +10,4 @@ Requirements:
     psutil
     gputil
     tabulate
-    threading
+    multithreading
