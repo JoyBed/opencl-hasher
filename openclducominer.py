@@ -131,7 +131,7 @@ def mine(ctx, opencl_algos, username):
             real_difficulty = 100 * int(difficulty)+1
             #stop_mining = False
 
-            ducos = sha1(opencl_algos, ctx, last_hash, expected_hash, 0, real_difficulty, 1000)
+            ducos = sha1(opencl_algos, ctx, last_hash, expected_hash, 0, real_difficulty, 1500)
             if ducos != None:
                 hashingStopTime = time.time()
                 timeDifference = hashingStopTime - hashingStartTime
