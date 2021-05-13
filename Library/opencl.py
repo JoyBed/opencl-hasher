@@ -81,85 +81,18 @@ class opencl_interface:
 
 
     def compile(self, bufferStructsObj, library_file, footer_file=None, N=15, invMemoryDensity=2):
-        assert type(N) == int
-        assert N < 20, "N >= 20 won't fit in a single buffer, so is unsupported. " + \
-                       "Nothing sane should use 20, is this wickr?"
-        self.N = N
-        assert bufferStructsObj is not None, "need to supply a bufferStructsObj : set all to 0 if necessary"
-        assert bufferStructsObj.code is not None, "bufferStructsObj should be initialised"
-        bufStructs = bufferStructsObj
-        self.wordSize = bufStructs.wordSize
 
-        # set the np word type, for use in .run
-        npType = {
-            4: np.uint32,
-            8: np.uint64,
-        }
-        self.wordType = npType[self.wordSize]
-
-        if footer_file != None:
-            src = bufStructs.code
-        else:
-            src = ""
-        if library_file:
-            with open(os.path.join(current_dir, "worker", "generic", library_file), "r") as rf:
-                src += rf.read()
-
-        if footer_file:
-            with open(os.path.join(current_dir, "worker", "generic", footer_file), "r") as rf:
-                src += rf.read()
-
-        # Standardise to using no \r's, move to bytes to stop trickery
-        src = src.encode("ascii")
-        src = src.replace(b"\r\n", b"\n")
-
-        # Debugging
-        if self.write_combined_file:
-            with open("combined_" + library_file, "wb") as wf:
-                wf.write(src)
-
-        # Convert back to text!
-        src = src.decode("ascii")
-
-        # Check that it starts with 2 newlines, for adding our defines
-        if src.startswith("\n\n"):
-            src = "\n\n" + src
-            src = src[len("\n\n"):]
-            # Prepend define N and invMemoryDensity
-            defines = "#define N {}\n#define invMemoryDensity {}\n".format(N, invMemoryDensity)
-            src = defines + src
+        src_file = open('.\\Library\\worker\\generic\\sha1.cl','r')
+        src = src_file.read()
+        src_file.close()
+        src.replace('\r\n','\n')
 
         # Kernel function instantiation. Build returns self.
         prg = cl.Program(self.ctx, src).build()
         return prg
 
-    # Forms the input buffer of derived keys
-    # Returns the buffer and number in the buffer, <= n (iter may be exhausted)
-    def make_input_buffer(self, dkIter, n):
-        inpArray = bytearray()
-        numEaten = n
 
-        for i in range(n):
-            try:
-                dk = dkIter.__next__()
-            except StopIteration:
-                # Correct the chunk size and break
-                numEaten = i
-                break
-
-            assert len(dk) == BLOCK_LEN_BYTES
-
-            inpArray.extend(dk)
-
-        if len(inpArray) == 0:
-            inpArray = b"\x00"
-
-        inp_g = cl.Buffer(self.ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=inpArray)
-
-        return inp_g, numEaten
-
-    def run(self, 
-            bufStructs, 
+    def run(self,  
             func, 
             pwdIter,
             expected_hash,
@@ -288,10 +221,9 @@ class opencl_algos:
 
     def cl_sha1(self, ctx, last_hash, expected_hash, start, end, max_batch_size = 2):
         prg = ctx[0]
-        bufStructs = ctx[1]
         def func(s, pwdim, last_hash,last_hash_size, result_bytes_array, expected_hash, start, batch_size, found_buffer, debug_buffer=None):
             prg.hash_main(s.queue, pwdim, None, last_hash,last_hash_size,start, result_bytes_array, expected_hash, batch_size, found_buffer)
             
         starting_point = 0
-        return self.opencl_ctx.run(bufStructs, func, None, expected_hash, mdPad_64_func, last_hash, start, end, max_batch_size)
+        return self.opencl_ctx.run(func, None, expected_hash, mdPad_64_func, last_hash, start, end, max_batch_size)
 
