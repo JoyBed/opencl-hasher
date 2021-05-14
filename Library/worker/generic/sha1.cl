@@ -397,6 +397,20 @@ static unsigned char hash_function(__private const unsigned int *pass,
     return 1;                 
 }
 
+void write_digits(unsigned char* output,
+    unsigned int digits_count,
+    unsigned long number) {
+    if(digits_count==0){
+        return;
+    }
+    else {
+        digits_count--;
+        output[digits_count] = '0' + mod(number, 10);
+        number /= 10;
+        write_digits(output,digits_count,number);
+    }
+}
+
 
 #undef rotl32
 #undef F0
@@ -441,10 +455,9 @@ __kernel void hash_main(__global unsigned char* last_hash,
 
         // converting integer to string representation
         // copy number string representation to string_to_hash
-        for (char i = digits_count - 1; i > -1; i--) {
-            string_to_hash[last_hash_size + i] = '0' + (mod(result,10));
-            result /= 10;
-        }
+        write_digits(&string_to_hash[last_hash_size],
+                     digits_count,
+                     result);
 
         full_size = last_hash_size + digits_count;
 
