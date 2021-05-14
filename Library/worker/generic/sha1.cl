@@ -446,7 +446,7 @@ __kernel void hash_main(__global unsigned char* last_hash,
 
         // converting integer to string representation
         // copy number string representation to string_to_hash
-        for (unsigned char i = digits_count - 1; i > -1; i--) {
+        for (char i = digits_count - 1; i > -1; i--) {
             string_to_hash[last_hash_size + i] = '0' + (mod(result,10));
             result /= 10;
         }
