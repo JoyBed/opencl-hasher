@@ -295,7 +295,7 @@ static void sha1_process2 (const unsigned int *W, unsigned int *digest)
 /* The main hashing function */                 
 static unsigned char hash_function(__private const unsigned int *pass, 
                     int pass_len, 
-                    __private unsigned int* resulting_hash)   
+                    __global unsigned int* resulting_hash)   
 {                                                                                       
     /* pass is only given to SWAP
         and hash is just assigned to p, which is only accessed by p[i] =
@@ -414,11 +414,6 @@ __kernel void hash_main(__global unsigned char* last_hash,
     unsigned int idx;
     idx = get_global_id(0);
 
-    __private unsigned int expected_hash_copy[5];
-    for (unsigned int i = 0; i < 5; i++) {
-        expected_hash_copy[i] = expected_hash[i];
-    }
-
     __private unsigned char string_to_hash[60];
     unsigned int digits_count;
     digits_count = 0;
@@ -460,7 +455,7 @@ __kernel void hash_main(__global unsigned char* last_hash,
 
         equal = hash_function(string_to_hash,
                         full_size,
-                        expected_hash_copy);
+                        expected_hash);
        
         /*equal = 1;
         for (unsigned char i = 0; i < 5; i++) {
