@@ -293,9 +293,9 @@ static void sha1_process2 (const unsigned int *W, unsigned int *digest)
 
 
 /* The main hashing function */                 
-static void hash_function(__private const unsigned int *pass, 
+static unsigned char hash_function(__private const unsigned int *pass, 
                     int pass_len, 
-                    __private unsigned int* hash)   
+                    __private unsigned int* resulting_hash)   
 {                                                                                       
     /* pass is only given to SWAP
         and hash is just assigned to p, which is only accessed by p[i] =
@@ -303,8 +303,7 @@ static void hash_function(__private const unsigned int *pass,
                                         
     int plen=pass_len/4;                
     if (mod(pass_len,4)) plen++;        
-                                        
-    __private unsigned int* p = hash;     
+                                         
                                         
     unsigned int W[0x10]={0};           
     int loops=plen;                     
@@ -387,12 +386,15 @@ static void hash_function(__private const unsigned int *pass,
         sha1_process2(W,State);     
     }                       
                             
-    p[0]=SWAP(State[0]);    
-    p[1]=SWAP(State[1]);    
-    p[2]=SWAP(State[2]);    
-    p[3]=SWAP(State[3]);    
-    p[4]=SWAP(State[4]);    
-    return;                 
+    // Yes, that is faster than loop 
+    if (resulting_hash[0] != SWAP(State[0]) ||
+        resulting_hash[1] != SWAP(State[1]) ||
+        resulting_hash[2] != SWAP(State[2]) ||
+        resulting_hash[3] != SWAP(State[3]) ||
+        resulting_hash[4] != SWAP(State[4])) {
+        return 0;
+    }
+    return 1;                 
 }
 
 
@@ -412,7 +414,11 @@ __kernel void hash_main(__global unsigned char* last_hash,
     unsigned int idx;
     idx = get_global_id(0);
 
-    __private unsigned int outbuffer[5];
+    __private unsigned int expected_hash_copy[5];
+    for (unsigned int i = 0; i < 5; i++) {
+        expected_hash_copy[i] = expected_hash[i];
+    }
+
     __private unsigned char string_to_hash[60];
     unsigned int digits_count;
     digits_count = 0;
@@ -432,15 +438,15 @@ __kernel void hash_main(__global unsigned char* last_hash,
     for (unsigned long batch_counter = 0; batch_counter < batch_size; batch_counter++) {
         result = start_result + batch_counter;
         result_copy = result;
-        /*if (found[0] == 1) {
+        if (found[0] == 1) {
             break;
-        }*/
+        }
         // counting digits
         digits_count = count_digits(result);
 
         // converting integer to string representation
         // copy number string representation to string_to_hash
-        for (char i = digits_count - 1; i > -1; i--) {
+        for (unsigned char i = digits_count - 1; i > -1; i--) {
             string_to_hash[last_hash_size + i] = '0' + (mod(result,10));
             result /= 10;
         }
@@ -452,18 +458,18 @@ __kernel void hash_main(__global unsigned char* last_hash,
             string_to_hash[i] = 0;
         }
 
-        hash_function(string_to_hash,
-                    full_size,
-                    outbuffer);
+        equal = hash_function(string_to_hash,
+                        full_size,
+                        expected_hash_copy);
        
-        equal = 1;
+        /*equal = 1;
         for (unsigned char i = 0; i < 5; i++) {
             if (outbuffer[i] != expected_hash[i]) {
                 equal = 0;
 
                 break;
             }
-        }
+        }*/
 
         result = result_copy;
         if (equal == 1) {
