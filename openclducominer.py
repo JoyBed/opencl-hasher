@@ -35,6 +35,7 @@ goodshares = int(0)
 badshares = int(0)
 mhashrate = float()
 mhashrate2 = float()
+restart = 0
 
 def reconnect():
     global pool_address,pool_port,soc
@@ -149,7 +150,7 @@ def mine(ctx, opencl_algos, username):
                     badshares += 1
 
 def mine2(ctx, opencl_algos, username):
-    global goodshares, badshares, mhashrate2
+    global goodshares, badshares, mhashrate2, restart
     while True:
         reconnect()
         # Mining section
@@ -219,6 +220,8 @@ def stats():
     print("Total cores:", psutil.cpu_count(logical=True))
     # No of Mining Threads
     print(f"No of Mining threads: {threading.active_count()-2}") # 2 because 1 is for main thread and 1 is for stats
+    # Resrtart Count - Minethread
+    print(f"Restart Count: {restart}")
     # CPU frequencies
     cpufreq = psutil.cpu_freq()
     print(f"Max Frequency: {cpufreq.max:.2f}Mhz")
@@ -308,9 +311,12 @@ def main(argv):
         minethread2.start()
     
     while True:
-        if minethread.is_alive() is not True:
-            print("Mining thread is not alive. Hence, restarting.")
+        if minethread.is_alive() == False:
+            print("Mining thread is notalive. Hence, restarting.")
+            minethread = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
+            minethread.daemon = True
             minethread.start()
+            restart = restart + 1
         time.sleep(1)
 
 if __name__ == '__main__':
