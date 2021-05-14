@@ -253,7 +253,7 @@ def stats():
     print(Fore.WHITE + tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
     print('\n')
     print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(totalhashrate, 2)) + "MH/s")
-    threading.Timer(float(15), stats).start()
+    threading.Timer(3, statsthread).start()
     
 def clear():
     os.system('cls' if os.name=='nt' else 'clear')
