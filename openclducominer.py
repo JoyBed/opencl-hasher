@@ -253,7 +253,7 @@ def stats():
     print(Fore.WHITE + tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
     print('\n')
     print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(totalhashrate, 2)) + "MH/s")
-    threading.Timer(float(15), stats).start()
+    threading.Timer(3, stats).start()
     
 def clear():
     os.system('cls' if os.name=='nt' else 'clear')
@@ -293,11 +293,13 @@ def main(argv):
     clear()
     opencl_algos = opencl.opencl_algos(int(platform), debug, write_combined_file,inv_memory_density=10,openclDevice=0)
     ctx = opencl_algos.cl_sha1_init()
-    stats()
+    # stats()
     minethread = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
     minethread.daemon = True
-    stats.daemon = True
+    statsthread = threading.Thread(target=stats)
+    statsthread.daemon = True
     minethread.start()
+    statsthread.start()
     if secondplatform == "y":
         minethread2 = threading.Thread(target=mine2, args=(ctx, opencl_algos, username))
         minethread2.daemon = True
