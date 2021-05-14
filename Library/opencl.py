@@ -82,7 +82,7 @@ class opencl_interface:
 
     def compile(self, bufferStructsObj, library_file, footer_file=None, N=15, invMemoryDensity=2):
 
-        src_file = open('.\\Library\\worker\\generic\\sha1.cl','r')
+        src_file = open(os.path.join('.', 'Library', 'worker', 'generic', 'sha1.cl'), 'r')
         src = src_file.read()
         src_file.close()
         src.replace('\r\n','\n')
