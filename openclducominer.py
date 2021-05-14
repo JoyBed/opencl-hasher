@@ -217,6 +217,8 @@ def stats():
     # number of cores
     print(Fore.WHITE + "Physical cores:", psutil.cpu_count(logical=False))
     print("Total cores:", psutil.cpu_count(logical=True))
+    # No of Mining Threads
+    print(f"No of Mining threads: {threading.active_count()-2}") # 2 because 1 is for main thread and 1 is for stats
     # CPU frequencies
     cpufreq = psutil.cpu_freq()
     print(f"Max Frequency: {cpufreq.max:.2f}Mhz")
@@ -306,6 +308,9 @@ def main(argv):
         minethread2.start()
     
     while True:
+        if minethread.is_alive() is not True:
+            print("Mining thread is not alive. Hence, restarting.")
+            minethread.start()
         time.sleep(1)
 
 if __name__ == '__main__':
