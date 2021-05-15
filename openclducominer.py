@@ -21,6 +21,8 @@ from collections import deque
 from colorama import Fore, Back, Style
 from tabulate import tabulate
 from subprocess import DEVNULL, Popen, check_call
+from os import name as osname
+from pathlib import Path
 import pyopencl
 import numpy
 import traceback
