@@ -38,14 +38,23 @@ mhashrate2 = float()
 restart = 0
 
 def reconnect():
-    global pool_address,pool_port,soc
-    soc = socket.socket()
-    temp = soc.connect((pool_address, int(pool_port)))
-    print(temp)
-    time.sleep(5)
-    soc.settimeout(20)
-    server_version = soc.recv(3).decode()  # Get server version
-    print(Fore.GREEN + "\nServer is on version", server_version)
+    global pool_address,pool_port,soc,restart
+    
+    while True:
+        try:
+            soc = socket.socket()
+            soc.connect((pool_address, int(pool_port)))
+            soc.settimeout(5)
+            server_version = soc.recv(3).decode()  # Get server version
+            print(Fore.GREEN + "\nServer is on version", server_version)
+            break
+        except socket.error as error:
+            print("Connection failed, retrying in 5 seconds.")
+            #print(f"Error Occured while establishing a connection to the server: {error}") #Debug Statement
+            restart = restart + 1
+            time.sleep(5)
+            continue     
+    
 
 def sha1(opencl_algo, ctx, last_hash, expected_hash, start, end, max_batch_size = 2):
     clresult=opencl_algo.cl_sha1(ctx, 
@@ -163,7 +172,7 @@ def stats():
     # No of Mining Threads
     print(f"No of Mining threads: {threading.active_count()-2}") # 2 because 1 is for main thread and 1 is for stats
     # Resrtart Count - Minethread
-    print(f"Restart Count: {restart}")
+    print(f"Attempts to establish connection : {restart}")
     # CPU frequencies
     cpufreq = psutil.cpu_freq()
     print(f"Max Frequency: {cpufreq.max:.2f}Mhz")
@@ -200,13 +209,13 @@ def stats():
     print(Fore.WHITE + tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
     print('\n')
     print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(totalhashrate, 2)) + "MH/s")
-    # threading.Timer(3, stats).start()
+    threading.Timer(3, stats).start()
     
 def clear():
     os.system('cls' if os.name=='nt' else 'clear')
 
 def main(argv):
-    global pool_address, pool_port, soc
+    global pool_address, pool_port, soc, restart
     # This sections grabs pool adress and port from Duino-Coin GitHub file
     # Serverip file URL
     serverip = ("https://raw.githubusercontent.com/"
@@ -217,14 +226,14 @@ def main(argv):
     with urllib.request.urlopen(serverip) as content:
         # Read content and split into lines
         content = content.read().decode().splitlines()
-        print(f"Content: {content}")
+        # print(f"Content: {content}")
     # Line 1 = IP
     pool_address = content[0] #official server
     #pool_address = "213.160.170.230" #test server
     # Line 2 = port
-    pool_port = int(content[1]) #official server
+    #pool_port = int(content[1]) #official server
+    pool_port = 2812
     #pool_port = int(2811) #test server
-
     # This section connects and logs user to the server
     clear()
     print(Fore.GREEN + "DuinoCoin OpenCL Miner for CPU/GPU\n")
@@ -248,17 +257,11 @@ def main(argv):
     minethread.start()
     statsthread.start()
     if secondplatform == "y":
-        minethread2 = threading.Thread(target=mine2, args=(ctx, opencl_algos, username))
+        minethread2 = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
         minethread2.daemon = True
         minethread2.start()
     
     while True:
-        if minethread.is_alive() == False:
-            print("Mining thread is notalive. Hence, restarting.")
-            minethread = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
-            minethread.daemon = True
-            minethread.start()
-            restart = restart + 1
         time.sleep(1)
 
 if __name__ == '__main__':
