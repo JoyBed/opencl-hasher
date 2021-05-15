@@ -30,7 +30,7 @@ gpus = GPUtil.getGPUs()
 soc = socket.socket()
 pool_address = ''
 pool_port = 0
-debug = 1
+debug = 0
 write_combined_file = True
 goodshares = int(0)
 badshares = int(0)
@@ -335,7 +335,7 @@ def main(argv):
         secondplatform = input("Select which platform to mine at: ")
         
     clear()
-    opencl_algos = opencl.opencl_algos(int(platform), debug, write_combined_file,inv_memory_density=10,openclDevice=1)
+    opencl_algos = opencl.opencl_algos(int(platform), debug, write_combined_file,inv_memory_density=10,openclDevice=0)
     ctx = opencl_algos.cl_sha1_init()
     # stats()
     minethread = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
