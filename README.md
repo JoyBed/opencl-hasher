@@ -19,4 +19,4 @@ Implementation of OpenCL SHA1 hashing for DuinoCoin project. The main goal is to
     psutil
     gputil
     tabulate
-    multithreading
+    requests
