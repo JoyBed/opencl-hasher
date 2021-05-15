@@ -36,14 +36,29 @@ goodshares = int(0)
 badshares = int(0)
 mhashrate = float()
 mhashrate2 = float()
+restart = 0
+stable = False
 
 def reconnect():
-    global pool_address,pool_port,soc
-    soc = socket.socket()
-    soc.connect((pool_address, int(pool_port)))
-    soc.settimeout(20)
-    server_version = soc.recv(3).decode()  # Get server version
-    print(Fore.GREEN + "\nServer is on version", server_version)
+    global pool_address,pool_port,soc,restart,stable
+    
+    while True:
+        try:
+            soc = socket.socket()
+            soc.connect((pool_address, int(pool_port)))
+            soc.settimeout(5)
+            server_version = soc.recv(3).decode()  # Get server version
+            print(Fore.GREEN + "\nServer is on version", server_version)
+            stable = True
+            break
+        except socket.error as error:
+            stable = False
+            print("Connection failed, retrying in 5 seconds.")
+            #print(f"Error Occured while establishing a connection to the server: {error}") #Debug Statement
+            restart = restart + 1
+            time.sleep(5)
+            continue     
+    
 
 def sha1(opencl_algo, ctx, last_hash, expected_hash, start, end, max_batch_size = 2):
     clresult=opencl_algo.cl_sha1(ctx, 
@@ -149,66 +164,61 @@ def mine(ctx, opencl_algos, username):
                 elif feedback == "BAD":
                     badshares += 1
 
-def mine2(ctx, opencl_algos, username):
-    global goodshares, badshares, mhashrate2
-    while True:
-        reconnect()
-        # Mining section
-        connected = True
-        while connected:
-            # Send job request
-            try:
-                soc.send(bytes(
-                    "JOB,"
-                    + str(username)
-                    + ",EXTREME", # will change
-                    encoding="utf8"))
-            except:
-                connected = False
-                continue
 
-            try:
-                # Receive work
-                job = soc.recv(128).decode().rstrip("\n")
-            except:
-                connected = False
-                continue
-            if job == '':
-                connected = False
-                continue
+def stats():
+    global goodshares, badshares, mhashrate, mhashrate2, stable
 
-            # Split received data to job and difficulty
-            job = job.split(",")
-            if debug == 1:
-                print("Received: " + " ".join(job))
-                print("job[0] " + str(type(job[0])))
-            difficulty = int(job[2])
-            job1 = job[0]
+    if stable: 
+        totalhashrate = float(mhashrate + mhashrate2)
+        clear()
+        print(Fore.GREEN + "="*40, "CPU Info", "="*40)
+        # number of cores
+        print(Fore.WHITE + "Physical cores:", psutil.cpu_count(logical=False))
+        print("Total cores:", psutil.cpu_count(logical=True))
+        # No of Mining Threads
+        print(f"No of Mining threads: {threading.active_count()-2}") # 2 because 1 is for main thread and 1 is for stats
+        # Resrtart Count - Minethread
+        print(f"Attempts to establish connection : {restart}")
+        # CPU frequencies
+        cpufreq = psutil.cpu_freq()
+        print(f"Max Frequency: {cpufreq.max:.2f}Mhz")
+        print(f"Min Frequency: {cpufreq.min:.2f}Mhz")
+        print(f"Current Frequency: {cpufreq.current:.2f}Mhz")
+        # CPU usage
+        print("CPU Usage Per Core:")
+        for i, percentage in enumerate(psutil.cpu_percent(percpu=True, interval=1)):
+            print(f"Core {i}: {percentage}%")
+        print(f"Total CPU Usage: {psutil.cpu_percent()}%")
         
-            expected_hash = bytearray.fromhex(job[1])
-            last_hash = job[0].encode('ascii')
-
-            hashingStartTime = time.time()
-
-            real_difficulty = 100 * int(difficulty)+1
-            #stop_mining = False
-
-            ducos = sha1(opencl_algos, ctx, last_hash, expected_hash, 0, real_difficulty, 1000)
-            if ducos != None:
-                hashingStopTime = time.time()
-                timeDifference = hashingStopTime - hashingStartTime
-                #sendresult(ducos,timeDifference,difficulty)
-                hashrate = ducos / timeDifference
-                mhashrate = hashrate / 1000000
-                round(mhashrate, 2)
-                soc.send(bytes(str(ducos)+ ","+ str(hashrate)+ ",OpenCL Miner",encoding="utf8"))
-                feedback = soc.recv(1024).decode().rstrip("\n")
-                # If result was good
-                if feedback == "GOOD":
-                    goodshares += 1
-                # If result was incorrect
-                elif feedback == "BAD":
-                    badshares += 1
+        list_gpus = []
+        print(Fore.GREEN + "="*40, "GPU Info", "="*40)
+        for gpu in gpus:
+            # get the GPU id
+            gpu_id = gpu.id
+            # name of GPU
+            gpu_name = gpu.name
+            # get % percentage of GPU usage of that GPU
+            gpu_load = f"{gpu.load*100}%"
+            # get free memory in MB format
+            gpu_free_memory = f"{gpu.memoryFree}MB"
+            # get used memory
+            gpu_used_memory = f"{gpu.memoryUsed}MB"
+            # get total memory
+            gpu_total_memory = f"{gpu.memoryTotal}MB"
+            # get GPU temperature in Celsius
+            gpu_temperature = f"{gpu.temperature} °C"
+            gpu_uuid = gpu.uuid
+            list_gpus.append((
+                gpu_id, gpu_name, gpu_load, gpu_free_memory, gpu_used_memory,
+                gpu_total_memory, gpu_temperature, gpu_uuid
+            ))
+        print(Fore.WHITE + tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
+        print('\n')
+        print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(totalhashrate, 2)) + "MH/s")
+        
+    else:
+        print("Connection is not stable. Trying to establish a stable connection.")
+    threading.Timer(5, stats).start()
 
 def donation():
     global donateExecutable
@@ -303,7 +313,7 @@ def clear():
     os.system('cls' if os.name=='nt' else 'clear')
 
 def main(argv):
-    global pool_address, pool_port, soc
+    global pool_address, pool_port, soc, restart
     # This sections grabs pool adress and port from Duino-Coin GitHub file
     # Serverip file URL
     serverip = ("https://raw.githubusercontent.com/"
@@ -314,14 +324,14 @@ def main(argv):
     with urllib.request.urlopen(serverip) as content:
         # Read content and split into lines
         content = content.read().decode().splitlines()
-
+        # print(f"Content: {content}")
     # Line 1 = IP
     pool_address = content[0] #official server
     #pool_address = "213.160.170.230" #test server
     # Line 2 = port
     pool_port = int(content[1]) #official server
-    #pool_port = int(2811) #test server
-
+    # pool_port = 2812 #For debugging only
+    # pool_port = int(2811) #test server
     # This section connects and logs user to the server
     clear()
     print(Fore.GREEN + "DuinoCoin OpenCL Miner for CPU/GPU\n")
@@ -346,7 +356,7 @@ def main(argv):
     statsthread.start()
     donation()
     if secondplatform == "y":
-        minethread2 = threading.Thread(target=mine2, args=(ctx, opencl_algos, username))
+        minethread2 = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
         minethread2.daemon = True
         minethread2.start()
     
