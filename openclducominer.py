@@ -36,9 +36,10 @@ badshares = int(0)
 mhashrate = float()
 mhashrate2 = float()
 restart = 0
+stable = False
 
 def reconnect():
-    global pool_address,pool_port,soc,restart
+    global pool_address,pool_port,soc,restart,stable
     
     while True:
         try:
@@ -47,8 +48,10 @@ def reconnect():
             soc.settimeout(5)
             server_version = soc.recv(3).decode()  # Get server version
             print(Fore.GREEN + "\nServer is on version", server_version)
+            stable = True
             break
         except socket.error as error:
+            stable = False
             print("Connection failed, retrying in 5 seconds.")
             #print(f"Error Occured while establishing a connection to the server: {error}") #Debug Statement
             restart = restart + 1
@@ -163,53 +166,57 @@ def mine(ctx, opencl_algos, username):
 
 def stats():
     global goodshares, badshares, mhashrate, mhashrate2
-    totalhashrate = float(mhashrate + mhashrate2)
-    clear()
-    print(Fore.GREEN + "="*40, "CPU Info", "="*40)
-    # number of cores
-    print(Fore.WHITE + "Physical cores:", psutil.cpu_count(logical=False))
-    print("Total cores:", psutil.cpu_count(logical=True))
-    # No of Mining Threads
-    print(f"No of Mining threads: {threading.active_count()-2}") # 2 because 1 is for main thread and 1 is for stats
-    # Resrtart Count - Minethread
-    print(f"Attempts to establish connection : {restart}")
-    # CPU frequencies
-    cpufreq = psutil.cpu_freq()
-    print(f"Max Frequency: {cpufreq.max:.2f}Mhz")
-    print(f"Min Frequency: {cpufreq.min:.2f}Mhz")
-    print(f"Current Frequency: {cpufreq.current:.2f}Mhz")
-    # CPU usage
-    print("CPU Usage Per Core:")
-    for i, percentage in enumerate(psutil.cpu_percent(percpu=True, interval=1)):
-        print(f"Core {i}: {percentage}%")
-    print(f"Total CPU Usage: {psutil.cpu_percent()}%")
-    
-    list_gpus = []
-    print(Fore.GREEN + "="*40, "GPU Info", "="*40)
-    for gpu in gpus:
-        # get the GPU id
-        gpu_id = gpu.id
-        # name of GPU
-        gpu_name = gpu.name
-        # get % percentage of GPU usage of that GPU
-        gpu_load = f"{gpu.load*100}%"
-        # get free memory in MB format
-        gpu_free_memory = f"{gpu.memoryFree}MB"
-        # get used memory
-        gpu_used_memory = f"{gpu.memoryUsed}MB"
-        # get total memory
-        gpu_total_memory = f"{gpu.memoryTotal}MB"
-        # get GPU temperature in Celsius
-        gpu_temperature = f"{gpu.temperature} °C"
-        gpu_uuid = gpu.uuid
-        list_gpus.append((
-            gpu_id, gpu_name, gpu_load, gpu_free_memory, gpu_used_memory,
-            gpu_total_memory, gpu_temperature, gpu_uuid
-        ))
-    print(Fore.WHITE + tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
-    print('\n')
-    print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(totalhashrate, 2)) + "MH/s")
-    threading.Timer(5, stats).start()
+
+    if stable: 
+        totalhashrate = float(mhashrate + mhashrate2)
+        clear()
+        print(Fore.GREEN + "="*40, "CPU Info", "="*40)
+        # number of cores
+        print(Fore.WHITE + "Physical cores:", psutil.cpu_count(logical=False))
+        print("Total cores:", psutil.cpu_count(logical=True))
+        # No of Mining Threads
+        print(f"No of Mining threads: {threading.active_count()-2}") # 2 because 1 is for main thread and 1 is for stats
+        # Resrtart Count - Minethread
+        print(f"Attempts to establish connection : {restart}")
+        # CPU frequencies
+        cpufreq = psutil.cpu_freq()
+        print(f"Max Frequency: {cpufreq.max:.2f}Mhz")
+        print(f"Min Frequency: {cpufreq.min:.2f}Mhz")
+        print(f"Current Frequency: {cpufreq.current:.2f}Mhz")
+        # CPU usage
+        print("CPU Usage Per Core:")
+        for i, percentage in enumerate(psutil.cpu_percent(percpu=True, interval=1)):
+            print(f"Core {i}: {percentage}%")
+        print(f"Total CPU Usage: {psutil.cpu_percent()}%")
+        
+        list_gpus = []
+        print(Fore.GREEN + "="*40, "GPU Info", "="*40)
+        for gpu in gpus:
+            # get the GPU id
+            gpu_id = gpu.id
+            # name of GPU
+            gpu_name = gpu.name
+            # get % percentage of GPU usage of that GPU
+            gpu_load = f"{gpu.load*100}%"
+            # get free memory in MB format
+            gpu_free_memory = f"{gpu.memoryFree}MB"
+            # get used memory
+            gpu_used_memory = f"{gpu.memoryUsed}MB"
+            # get total memory
+            gpu_total_memory = f"{gpu.memoryTotal}MB"
+            # get GPU temperature in Celsius
+            gpu_temperature = f"{gpu.temperature} °C"
+            gpu_uuid = gpu.uuid
+            list_gpus.append((
+                gpu_id, gpu_name, gpu_load, gpu_free_memory, gpu_used_memory,
+                gpu_total_memory, gpu_temperature, gpu_uuid
+            ))
+        print(Fore.WHITE + tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
+        print('\n')
+        print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(totalhashrate, 2)) + "MH/s")
+        threading.Timer(5, stats).start()
+    else:
+        print("Connection is not stable. Trying to establish a stable connection.")
     
 def clear():
     os.system('cls' if os.name=='nt' else 'clear')
@@ -233,7 +240,7 @@ def main(argv):
     # Line 2 = port
     pool_port = int(content[1]) #official server
     # pool_port = 2812 #For debugging only
-    #pool_port = int(2811) #test server
+    # pool_port = int(2811) #test server
     # This section connects and logs user to the server
     clear()
     print(Fore.GREEN + "DuinoCoin OpenCL Miner for CPU/GPU\n")
