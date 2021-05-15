@@ -24,6 +24,9 @@ from subprocess import DEVNULL, Popen, check_call
 import pyopencl
 import numpy
 import traceback
+from os import name as osname
+from pathlib import Path
+import requests
 
 colorama.init()
 gpus = GPUtil.getGPUs()
