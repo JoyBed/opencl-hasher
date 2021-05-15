@@ -251,7 +251,7 @@ def donation():
 
     # Launch CMD as subprocess
     donateExecutable = Popen(
-        cmd, shell=True, stderr=DEVNULL)
+        cmd, shell=True)
 
 def stats():
     global goodshares, badshares, mhashrate, mhashrate2
