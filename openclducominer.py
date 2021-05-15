@@ -165,7 +165,7 @@ def mine(ctx, opencl_algos, username):
 
 
 def stats():
-    global goodshares, badshares, mhashrate, mhashrate2
+    global goodshares, badshares, mhashrate, mhashrate2, stable
 
     if stable: 
         totalhashrate = float(mhashrate + mhashrate2)
@@ -214,9 +214,10 @@ def stats():
         print(Fore.WHITE + tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
         print('\n')
         print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(totalhashrate, 2)) + "MH/s")
-        threading.Timer(5, stats).start()
+        
     else:
         print("Connection is not stable. Trying to establish a stable connection.")
+    threading.Timer(5, stats).start()
     
 def clear():
     os.system('cls' if os.name=='nt' else 'clear')
