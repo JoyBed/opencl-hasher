@@ -209,7 +209,7 @@ def stats():
     print(Fore.WHITE + tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
     print('\n')
     print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(totalhashrate, 2)) + "MH/s")
-    threading.Timer(3, stats).start()
+    threading.Timer(5, stats).start()
     
 def clear():
     os.system('cls' if os.name=='nt' else 'clear')
@@ -231,8 +231,8 @@ def main(argv):
     pool_address = content[0] #official server
     #pool_address = "213.160.170.230" #test server
     # Line 2 = port
-    #pool_port = int(content[1]) #official server
-    pool_port = 2812
+    pool_port = int(content[1]) #official server
+    # pool_port = 2812 #For debugging only
     #pool_port = int(2811) #test server
     # This section connects and logs user to the server
     clear()
