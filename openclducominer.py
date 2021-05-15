@@ -25,7 +25,10 @@ from os import name as osname
 from pathlib import Path
 import pyopencl
 import numpy
+import requests
 import traceback
+
+
 
 colorama.init()
 gpus = GPUtil.getGPUs()
