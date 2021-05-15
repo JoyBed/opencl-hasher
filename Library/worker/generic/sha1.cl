@@ -303,8 +303,12 @@ static unsigned char hash_function(__private const unsigned int *pass,
                                         
     int plen=pass_len/4;                
     if (mod(pass_len,4)) plen++;        
-                                         
-                                        
+     
+	unsigned int pass_len_4 = pass_len+4;
+	unsigned int padding_offset = (((pass_len+4)-(pass_len_4/4*4))*8);
+	unsigned int padding = 0x80 << padding_offset; 
+    unsigned int v = mod(pass_len,64); 
+	
     unsigned int W[0x10]={0};           
     int loops=plen;                     
     int curloop=0;                      
@@ -334,22 +338,23 @@ static unsigned char hash_function(__private const unsigned int *pass,
         W[0xD]=0x0;     
         W[0xE]=0x0;     
         W[0xF]=0x0;     
-                        
+           
+		unsigned int cur_loop_index_16 = curloop*16;
         for (int m=0;loops!=0 && m<16;m++)          
         {                                           
-            W[m] ^= SWAP(pass[m+(curloop*16)]);       
+            W[m] ^= SWAP(pass[m + cur_loop_index_16]);       
             loops--;                                
         }                                           
                                                     
-        if (loops==0 && mod(pass_len,64)!=0)        
+        if (loops == 0 && v != 0)        
         {                                           
-            unsigned int padding = 0x80<<(((pass_len+4)-((pass_len+4)/4*4))*8);   
-            int v = mod(pass_len,64);                 
+              
+            //int v = mod(pass_len,64);                 
             W[v/4] |= SWAP(padding);                  
             if ((pass_len & 0x3B) != 0x3B)              
             {                                       
                 /* Let's add length */              
-                W[0x0F]=pass_len*8;                 
+                W[0x0F] = pass_len*8;                 
             }                                       
         }                                           
                                                     
@@ -375,9 +380,9 @@ static unsigned char hash_function(__private const unsigned int *pass,
         W[0xD]=0x0;         
         W[0xE]=0x0;         
         W[0xF]=0x0;         
-        if ((pass_len&0x3B) != 0x3B)  
+        if ((pass_len & 0x3B) != 0x3B)  
         {                           
-            unsigned int padding = 0x80<<(((pass_len+4)-((pass_len+4)/4*4))*8); 
+            //unsigned int padding = 0x80 << padding_offset; 
             W[0] |= SWAP(padding);    
         }                           
         /* Let's add length */      
@@ -387,13 +392,28 @@ static unsigned char hash_function(__private const unsigned int *pass,
     }                       
                             
     // Yes, that is faster than loop 
-    if (resulting_hash[0] != SWAP(State[0]) ||
-        resulting_hash[1] != SWAP(State[1]) ||
-        resulting_hash[2] != SWAP(State[2]) ||
-        resulting_hash[3] != SWAP(State[3]) ||
-        resulting_hash[4] != SWAP(State[4])) {
-        return 0;
-    }
+    //if (resulting_hash[0] != SWAP(State[0]) ||
+    //    resulting_hash[1] != SWAP(State[1]) ||
+    //    resulting_hash[2] != SWAP(State[2]) ||
+    //    resulting_hash[3] != SWAP(State[3]) ||
+    //    resulting_hash[4] != SWAP(State[4])) {
+    //    return 0;
+    //}
+	if(resulting_hash[0] != SWAP(State[0])){
+		return 0;
+	}
+	if(resulting_hash[1] != SWAP(State[1])){
+		return 0;
+	}
+	if(resulting_hash[2] != SWAP(State[2])){
+		return 0;
+	}
+	if(resulting_hash[3] != SWAP(State[3])){
+		return 0;
+	}
+	if(resulting_hash[4] != SWAP(State[4])){
+		return 0;
+	}
     return 1;                 
 }
 
@@ -428,6 +448,11 @@ __kernel void hash_main(__global unsigned char* last_hash,
     unsigned int idx;
     idx = get_global_id(0);
 
+    /*__private unsigned int expected_hash_copy[5];
+    for (unsigned int i = 0; i < 5; i++) {
+        expected_hash_copy[i] = expected_hash[i];
+    }*/
+
     __private unsigned char string_to_hash[60];
     unsigned int digits_count;
     digits_count = 0;
@@ -455,6 +480,10 @@ __kernel void hash_main(__global unsigned char* last_hash,
 
         // converting integer to string representation
         // copy number string representation to string_to_hash
+        /*for (char i = digits_count - 1; i > -1; i--) {
+            string_to_hash[last_hash_size + i] = '0' + (mod(result,10));
+            result /= 10;
+        }*/
         write_digits(&string_to_hash[last_hash_size],
                      digits_count,
                      result);
