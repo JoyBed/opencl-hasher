@@ -279,6 +279,10 @@ def stats():
     print(f"Max Frequency: {cpufreq.max:.2f}Mhz")
     print(f"Min Frequency: {cpufreq.min:.2f}Mhz")
     print(f"Current Frequency: {cpufreq.current:.2f}Mhz")
+     # No of Mining Threads
+    print(f"No of Mining threads: {threading.active_count()-2}") # 2 because 1 is for main thread and 1 is for stats
+    # Resrtart Count - Minethread
+    print(f"Attempts to establish connection : {restart}")
     # CPU usage
     print("CPU Usage Per Core:")
     for i, percentage in enumerate(psutil.cpu_percent(percpu=True, interval=1)):
