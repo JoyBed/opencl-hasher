@@ -11,127 +11,6 @@
     hash array trimmed to size 5
 */
 
-unsigned int SWAP(unsigned int val)
-{
-    return (rotate(((val) & 0x00FF00FF), 24U) | rotate(((val) & 0xFF00FF00), 8U));
-}
-
-unsigned long long count_digits(unsigned long input) {
-    // counting digits
-    if (input < 10000000000) {
-        // [10,1]
-        if (input < 100000) {
-            // [5,1]
-            if (input < 1000) {
-                // [3,1]
-                if (input < 100) {
-                    // [2,1]
-                    if (input < 10) {
-                        return 1;
-                    }
-                    else {
-                        return 2;
-                    }
-                }
-                else {
-                    return 3;
-                }
-            }
-            else {
-                if (input < 10000) {
-                    return 4;
-                }
-                else {
-                    return 5;
-                }
-
-            }
-        }
-        else {
-            // [10,6]
-            if (input < 100000000) {
-                // [8,6]
-                if (input < 10000000) {
-                    // [7,6]
-                    if (input < 1000000) {
-                        return 6;
-                    }
-                    else {
-                        return 7;
-                    }
-                }
-                else {
-                    return 8;
-                }
-            }
-            else {
-                if (input < 1000000000) {
-                    return 9;
-                }
-                else {
-                    return 10;
-                }
-            }
-        }
-    }
-    else {
-        // [20,11]
-        if (input < 1000000000000000) {
-            // [15,11]
-            if (input < 10000000000000) {
-                // [13,11]
-                if (input < 1000000000000) {
-                    if (input < 100000000000) {
-                        return 11;
-                    }
-                    else {
-                        return 12;
-                    }
-                }
-                else {
-                    return 13;
-                }
-            }
-            else {
-                //[15,14]
-                if (input < 100000000000000) {
-                    return 14;
-                }
-                else {
-                    return 15;
-                }
-            }
-        }
-        else {
-            // [20,16]
-            if (input < 1000000000000000000) {
-                // [18,16]
-                if (input < 100000000000000000) {
-                    // [17,16]
-                    if (input < 10000000000000000) {
-                        return 16;
-                    }
-                    else {
-                        return 17;
-                    }
-                }
-                else {
-                    return 18;
-                }
-            }
-            else {
-                // [20,19]
-                if (input < 10000000000000000000) {
-                    return 19;
-                }
-                else {
-                    return 20;
-                }
-            }
-        }
-    }
-}
-
 #define rotl32(a,n) rotate ((a), (n)) 
 
 #define mod(x,y) ((x)-((x)/(y)*(y)))
@@ -151,13 +30,13 @@ unsigned long long count_digits(unsigned long input) {
 #define SHA1C02 0x8f1bbcdcu
 #define SHA1C03 0xca62c1d6u
 
-#define SHA1_STEP(f,a,b,c,d,e,x)\ 
-{\   
-  e += K;\  
-  e += x;\ 
-  e += f (b, c, d);\
-  e += rotl32 (a,  5u);\
-  b  = rotl32 (b, 30u);\
+#define SHA1_STEP(f,a,b,c,d,e,x)    \
+{                                   \
+  e += K;                           \
+  e += x;                           \
+  e += f (b, c, d);                 \
+  e += rotl32 (a,  5u);             \
+  b  = rotl32 (b, 30u);             \
 }
 
 static void sha1_process2 (const unsigned int *W, unsigned int *digest)
@@ -291,146 +170,114 @@ static void sha1_process2 (const unsigned int *W, unsigned int *digest)
   digest[4] += E;
 } 
 
-
-/* The main hashing function */                 
-static unsigned char hash_function(__private const unsigned int *pass, 
-                    int pass_len, 
-                    __global unsigned int* resulting_hash)   
-{                                                                                       
+#define def_hash(funcName, passTag, hashTag)    \
+/* The main hashing function */                 \
+static void funcName(passTag const unsigned int *pass, int pass_len, hashTag unsigned int* hash)   \
+{                                                                                       \
     /* pass is only given to SWAP
         and hash is just assigned to p, which is only accessed by p[i] =
-        => both tags irrelevant! */     
-                                        
-    int plen=pass_len/4;                
-    if (mod(pass_len,4)) plen++;        
-     
-	unsigned int pass_len_4 = pass_len+4;
-	unsigned int padding_offset = (((pass_len+4)-(pass_len_4/4*4))*8);
-	unsigned int padding = 0x80 << padding_offset; 
-    unsigned int v = mod(pass_len,64); 
-	
-    unsigned int W[0x10]={0};           
-    int loops=plen;                     
-    int curloop=0;                      
-    unsigned int State[5]={0};          
-    State[0] = 0x67452301;              
-    State[1] = 0xefcdab89;              
-    State[2] = 0x98badcfe;              
-    State[3] = 0x10325476;              
-    State[4] = 0xc3d2e1f0;              
-                                        
-                                        
-    while (loops>0)     
-    {                   
-        W[0x0]=0x0;     
-        W[0x1]=0x0;     
-        W[0x2]=0x0;     
-        W[0x3]=0x0;     
-        W[0x4]=0x0;     
-        W[0x5]=0x0;     
-        W[0x6]=0x0;     
-        W[0x7]=0x0;     
-        W[0x8]=0x0;     
-        W[0x9]=0x0;     
-        W[0xA]=0x0;     
-        W[0xB]=0x0;     
-        W[0xC]=0x0;     
-        W[0xD]=0x0;     
-        W[0xE]=0x0;     
-        W[0xF]=0x0;     
-           
-		unsigned int cur_loop_index_16 = curloop*16;
-        for (int m=0;loops!=0 && m<16;m++)          
-        {                                           
-            W[m] ^= SWAP(pass[m + cur_loop_index_16]);       
-            loops--;                                
-        }                                           
-                                                    
-        if (loops == 0 && v != 0)        
-        {                                           
-              
-            //int v = mod(pass_len,64);                 
-            W[v/4] |= SWAP(padding);                  
-            if ((pass_len & 0x3B) != 0x3B)              
-            {                                       
-                /* Let's add length */              
-                W[0x0F] = pass_len*8;                 
-            }                                       
-        }                                           
-                                                    
-        sha1_process2(W,State);                     
-        curloop++;                                  
-    }                                               
-                            
-    if (mod(plen,16) == 0)    
-    {                       
-        W[0x0]=0x0;         
-        W[0x1]=0x0;         
-        W[0x2]=0x0;         
-        W[0x3]=0x0;         
-        W[0x4]=0x0;         
-        W[0x5]=0x0;         
-        W[0x6]=0x0;         
-        W[0x7]=0x0;         
-        W[0x8]=0x0;         
-        W[0x9]=0x0;         
-        W[0xA]=0x0;         
-        W[0xB]=0x0;         
-        W[0xC]=0x0;         
-        W[0xD]=0x0;         
-        W[0xE]=0x0;         
-        W[0xF]=0x0;         
-        if ((pass_len & 0x3B) != 0x3B)  
-        {                           
-            //unsigned int padding = 0x80 << padding_offset; 
-            W[0] |= SWAP(padding);    
-        }                           
-        /* Let's add length */      
-        W[0x0F] = pass_len*8;         
-                                    
-        sha1_process2(W,State);     
-    }                       
-                            
-    // Yes, that is faster than loop 
-    //if (resulting_hash[0] != SWAP(State[0]) ||
-    //    resulting_hash[1] != SWAP(State[1]) ||
-    //    resulting_hash[2] != SWAP(State[2]) ||
-    //    resulting_hash[3] != SWAP(State[3]) ||
-    //    resulting_hash[4] != SWAP(State[4])) {
-    //    return 0;
-    //}
-	if(resulting_hash[0] != SWAP(State[0])){
-		return 0;
-	}
-	if(resulting_hash[1] != SWAP(State[1])){
-		return 0;
-	}
-	if(resulting_hash[2] != SWAP(State[2])){
-		return 0;
-	}
-	if(resulting_hash[3] != SWAP(State[3])){
-		return 0;
-	}
-	if(resulting_hash[4] != SWAP(State[4])){
-		return 0;
-	}
-    return 1;                 
+        => both tags irrelevant! */     \
+                                        \
+    int plen=pass_len/4;                \
+    if (mod(pass_len,4)) plen++;        \
+                                        \
+    hashTag unsigned int* p = hash;     \
+                                        \
+    unsigned int W[0x10]={0};           \
+    int loops=plen;                     \
+    int curloop=0;                      \
+    unsigned int State[5]={0};          \
+    State[0] = 0x67452301;              \
+    State[1] = 0xefcdab89;              \
+    State[2] = 0x98badcfe;              \
+    State[3] = 0x10325476;              \
+    State[4] = 0xc3d2e1f0;              \
+                                        \
+                                        \
+    while (loops>0)     \
+    {                   \
+        W[0x0]=0x0;     \
+        W[0x1]=0x0;     \
+        W[0x2]=0x0;     \
+        W[0x3]=0x0;     \
+        W[0x4]=0x0;     \
+        W[0x5]=0x0;     \
+        W[0x6]=0x0;     \
+        W[0x7]=0x0;     \
+        W[0x8]=0x0;     \
+        W[0x9]=0x0;     \
+        W[0xA]=0x0;     \
+        W[0xB]=0x0;     \
+        W[0xC]=0x0;     \
+        W[0xD]=0x0;     \
+        W[0xE]=0x0;     \
+        W[0xF]=0x0;     \
+                        \
+        for (int m=0;loops!=0 && m<16;m++)          \
+        {                                           \
+            W[m]^=SWAP(pass[m+(curloop*16)]);       \
+            loops--;                                \
+        }                                           \
+                                                    \
+        if (loops==0 && mod(pass_len,64)!=0)        \
+        {                                           \
+            unsigned int padding=0x80<<(((pass_len+4)-((pass_len+4)/4*4))*8);   \
+            int v=mod(pass_len,64);                 \
+            W[v/4]|=SWAP(padding);                  \
+            if ((pass_len&0x3B)!=0x3B)              \
+            {                                       \
+                /* Let's add length */              \
+                W[0x0F]=pass_len*8;                 \
+            }                                       \
+        }                                           \
+                                                    \
+        sha1_process2(W,State);                     \
+        curloop++;                                  \
+    }                                               \
+                            \
+    if (mod(plen,16)==0)    \
+    {                       \
+        W[0x0]=0x0;         \
+        W[0x1]=0x0;         \
+        W[0x2]=0x0;         \
+        W[0x3]=0x0;         \
+        W[0x4]=0x0;         \
+        W[0x5]=0x0;         \
+        W[0x6]=0x0;         \
+        W[0x7]=0x0;         \
+        W[0x8]=0x0;         \
+        W[0x9]=0x0;         \
+        W[0xA]=0x0;         \
+        W[0xB]=0x0;         \
+        W[0xC]=0x0;         \
+        W[0xD]=0x0;         \
+        W[0xE]=0x0;         \
+        W[0xF]=0x0;         \
+        if ((pass_len&0x3B)!=0x3B)  \
+        {                           \
+            unsigned int padding=0x80<<(((pass_len+4)-((pass_len+4)/4*4))*8); \
+            W[0]|=SWAP(padding);    \
+        }                           \
+        /* Let's add length */      \
+        W[0x0F]=pass_len*8;         \
+                                    \
+        sha1_process2(W,State);     \
+    }                       \
+                            \
+    p[0]=SWAP(State[0]);    \
+    p[1]=SWAP(State[1]);    \
+    p[2]=SWAP(State[2]);    \
+    p[3]=SWAP(State[3]);    \
+    p[4]=SWAP(State[4]);    \
+    return;                 \
 }
 
-void write_digits(unsigned char* output,
-    unsigned int digits_count,
-    unsigned long number) {
-    if(digits_count==0){
-        return;
-    }
-    else {
-        digits_count--;
-        output[digits_count] = '0' + mod(number, 10);
-        number /= 10;
-        write_digits(output,digits_count,number);
-    }
-}
+def_hash(hash_global, __global, __global)
+def_hash(hash_private, __private, __private)
+def_hash(hash_glbl_to_priv, __global, __private)
+def_hash(hash_priv_to_glbl, __private, __global)
 
+#undef mod
 
 #undef rotl32
 #undef F0
@@ -439,73 +286,74 @@ void write_digits(unsigned char* output,
                 
 __kernel void hash_main(__global unsigned char* last_hash, 
     unsigned int last_hash_size,
-    unsigned long start,
-    __global unsigned long* result_buffer,
-    __global unsigned int* expected_hash,
-    unsigned long batch_size,
-    __global unsigned char* found)
+    unsigned int start,
+    __global outbuf * outbuffer, 
+    __global uchar* result_buffer,
+    __global unsigned int* expected_hash)
 {
-    unsigned int idx;
-    idx = get_global_id(0);
+    unsigned int idx = get_global_id(0);
 
-    __private unsigned char string_to_hash[60];
-    unsigned int digits_count;
+    unsigned char string_to_hash[30];
+     unsigned char number_string[10];
+     unsigned int digits_count;
+     unsigned int digits_count_copy;
     digits_count = 0;
-
-    unsigned long start_result = start + idx * batch_size;
-    unsigned long result;
-    unsigned long result_copy;
-
-    unsigned int full_size;
-    unsigned char equal;
+     unsigned int result;
+     unsigned int full_size;
+    result = start + idx;
     
+
+    // counting digits
+    while (result > 0) {
+        result /= 10;
+        digits_count++;
+    }
+
+    // converting integer to string representation
+    digits_count_copy = digits_count;
+    result = start + idx;
+    while (digits_count_copy >0) {
+        number_string[digits_count_copy - 1] = '0'+(result % 10);
+        result /= 10;
+        digits_count_copy -= 1;
+    }
     
     // copy last_hash to string_to_hash
     for (unsigned char i = 0; i < last_hash_size; i++) {
         string_to_hash[i] = last_hash[i];
     }
-    for (unsigned long batch_counter = 0; batch_counter < batch_size; batch_counter++) {
-        result = start_result + batch_counter;
-        result_copy = result;
-        if (found[0] == 1) {
-            break;
-        }
-        // counting digits
-        digits_count = count_digits(result);
+    // copy number string representation to string_to_hash
+    for (unsigned char i = 0; i < digits_count; i++) {
+        string_to_hash[last_hash_size + i] = number_string[i];
+    }
+    full_size = last_hash_size + digits_count;
+    /*while (full_size % 4 != 0) {
+        string_to_hash[full_size] = 0;
+        full_size += 1;
+    }*/
 
-        // converting integer to string representation
-        // copy number string representation to string_to_hash
-        write_digits(&string_to_hash[last_hash_size],
-                     digits_count,
-                     result);
 
-        full_size = last_hash_size + digits_count;
+    hash_global(string_to_hash,
+                full_size, 
+                outbuffer[idx].buffer);
 
-        // nulling rest of the array
-        for (unsigned char i = full_size; i < 60; i++) {
-            string_to_hash[i] = 0;
-        }
 
-        equal = hash_function(string_to_hash,
-                        full_size,
-                        expected_hash);
-       
-        /*equal = 1;
-        for (unsigned char i = 0; i < 5; i++) {
-            if (outbuffer[i] != expected_hash[i]) {
-                equal = 0;
+    unsigned char equal = 1;
+    for (unsigned char i = 0; i < 5; i++) {
+        if (outbuffer[idx].buffer[i] != expected_hash[i]) {
+            equal = 0;
 
-                break;
-            }
-        }*/
-
-        result = result_copy;
-        if (equal == 1) {
-            result_buffer[0] = 1;
-            result_buffer[1] = result;
-            found[0] = 1;
             break;
         }
     }
-  
+    result_buffer[idx] = equal;
+    /*for (unsigned int i = 0; i < full_size; i++) {
+        result_buffer[i] = string_to_hash[i];
+    }*/
+
+/*     outbuffer[idx].buffer[0]=hash[0];
+    outbuffer[idx].buffer[1]=hash[1];
+    outbuffer[idx].buffer[2]=hash[2];
+    outbuffer[idx].buffer[3]=hash[3];
+    outbuffer[idx].buffer[4]=hash[4]; */
 }
