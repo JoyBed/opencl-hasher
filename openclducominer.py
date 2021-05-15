@@ -40,7 +40,9 @@ restart = 0
 def reconnect():
     global pool_address,pool_port,soc
     soc = socket.socket()
-    soc.connect((pool_address, int(pool_port)))
+    temp = soc.connect((pool_address, int(pool_port)))
+    print(temp)
+    time.sleep(5)
     soc.settimeout(20)
     server_version = soc.recv(3).decode()  # Get server version
     print(Fore.GREEN + "\nServer is on version", server_version)
@@ -149,66 +151,6 @@ def mine(ctx, opencl_algos, username):
                 elif feedback == "BAD":
                     badshares += 1
 
-def mine2(ctx, opencl_algos, username):
-    global goodshares, badshares, mhashrate2, restart
-    while True:
-        reconnect()
-        # Mining section
-        connected = True
-        while connected:
-            # Send job request
-            try:
-                soc.send(bytes(
-                    "JOB,"
-                    + str(username)
-                    + ",EXTREME", # will change
-                    encoding="utf8"))
-            except:
-                connected = False
-                continue
-
-            try:
-                # Receive work
-                job = soc.recv(128).decode().rstrip("\n")
-            except:
-                connected = False
-                continue
-            if job == '':
-                connected = False
-                continue
-
-            # Split received data to job and difficulty
-            job = job.split(",")
-            if debug == 1:
-                print("Received: " + " ".join(job))
-                print("job[0] " + str(type(job[0])))
-            difficulty = int(job[2])
-            job1 = job[0]
-        
-            expected_hash = bytearray.fromhex(job[1])
-            last_hash = job[0].encode('ascii')
-
-            hashingStartTime = time.time()
-
-            real_difficulty = 100 * int(difficulty)+1
-            #stop_mining = False
-
-            ducos = sha1(opencl_algos, ctx, last_hash, expected_hash, 0, real_difficulty, 1000)
-            if ducos != None:
-                hashingStopTime = time.time()
-                timeDifference = hashingStopTime - hashingStartTime
-                #sendresult(ducos,timeDifference,difficulty)
-                hashrate = ducos / timeDifference
-                mhashrate = hashrate / 1000000
-                round(mhashrate, 2)
-                soc.send(bytes(str(ducos)+ ","+ str(hashrate)+ ",OpenCL Miner",encoding="utf8"))
-                feedback = soc.recv(1024).decode().rstrip("\n")
-                # If result was good
-                if feedback == "GOOD":
-                    goodshares += 1
-                # If result was incorrect
-                elif feedback == "BAD":
-                    badshares += 1
 
 def stats():
     global goodshares, badshares, mhashrate, mhashrate2
@@ -258,7 +200,7 @@ def stats():
     print(Fore.WHITE + tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
     print('\n')
     print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(totalhashrate, 2)) + "MH/s")
-    threading.Timer(3, stats).start()
+    # threading.Timer(3, stats).start()
     
 def clear():
     os.system('cls' if os.name=='nt' else 'clear')
@@ -275,7 +217,7 @@ def main(argv):
     with urllib.request.urlopen(serverip) as content:
         # Read content and split into lines
         content = content.read().decode().splitlines()
-
+        print(f"Content: {content}")
     # Line 1 = IP
     pool_address = content[0] #official server
     #pool_address = "213.160.170.230" #test server
