@@ -313,7 +313,7 @@ def main(argv):
     statsthread.daemon = True
     minethread.start()
     statsthread.start()
-    # donation()
+    donation()
     if secondplatform == "y":
         minethread2 = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
         minethread2.daemon = True
