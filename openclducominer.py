@@ -44,13 +44,24 @@ mhashrate = float()
 mhashrate2 = float()
 restart = 0
 stable = False
-# File for Mining actions
-logging.basicConfig(filename='miner_logs.txt', filemode='w', level=logging.INFO)
-# File for errors and exceptions
-logging.basicConfig(filename='exceptions.log', filemode='w', level=logging.ERROR)
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+logs =''
+errors =''
+
+def setup_logger(name, log_file, level=logging.INFO):
+    global formatter
+
+    handler = logging.FileHandler(log_file)        
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+
+    return logger
 
 def reconnect():
-    global pool_address,pool_port,soc,restart,stable
+    global pool_address,pool_port,soc,restart,stable, errors, logs
     
     while True:
         stable = False
@@ -65,7 +76,7 @@ def reconnect():
         except socket.error as error:
             stable = False
             print("Connection failed, retrying in 5 seconds.")
-            #print(f"Error Occured while establishing a connection to the server: {error}") #Debug Statement
+            errors.error(str(error), exc_info=True)
             restart = restart + 1
             time.sleep(5)
             continue     
@@ -81,7 +92,7 @@ def sha1(opencl_algo, ctx, last_hash, expected_hash, start, end, max_batch_size 
     return(clresult)
     
 def sendresult(result,timeDifference,difficulty) -> bool:
-    global goodshares, badshares, mhashrate
+    global goodshares, badshares, mhashrate, logs, errors
     to_return = True
     hashrate = result / timeDifference
     mhashrate = hashrate / 1000000
@@ -94,6 +105,7 @@ def sendresult(result,timeDifference,difficulty) -> bool:
     except Exception as e:
         print(e)
         to_return = False
+        errors.error(e,exc_info=True)
         return to_return
     
     # If result was good
@@ -115,7 +127,7 @@ def get_gpu_info():
     return gpuusage
 
 def mine(ctx, opencl_algos, username):
-    global goodshares, badshares, mhashrate
+    global goodshares, badshares, mhashrate, logs, errors
     while True:
         reconnect()
         # Mining section
@@ -128,15 +140,17 @@ def mine(ctx, opencl_algos, username):
                     + str(username)
                     + ",EXTREME", # will change
                     encoding="utf8"))
-            except:
+            except Exception as error:
                 connected = False
+                errors.error(error,exc_info=True)
                 continue
 
             try:
                 # Receive work
                 job = soc.recv(128).decode().rstrip("\n")
-            except:
+            except Exception as error:
                 connected = False
+                errors.error(error,exc_info=True)
                 continue
             if job == '':
                 connected = False
@@ -152,7 +166,7 @@ def mine(ctx, opencl_algos, username):
         
             expected_hash = bytearray.fromhex(job[1])
             last_hash = job[0].encode('ascii')
-            logging.info(f'Last Processed Hash: {last_hash}')
+            logs.info(f'Last Processed Hash: {last_hash}')
             hashingStartTime = time.time()
 
             real_difficulty = 100 * int(difficulty)+1
@@ -171,15 +185,15 @@ def mine(ctx, opencl_algos, username):
                 # If result was good
                 if feedback == "GOOD":
                     goodshares += 1
-                    logging.info("Good Job")
+                    logs.info("Good Job")
                 # If result was incorrect
                 elif feedback == "BAD":
                     badshares += 1
-                    logging.info("Bad Job")
+                    logs.info("Bad Job")
 
 
 def stats():
-    global goodshares, badshares, mhashrate, mhashrate2, stable
+    global goodshares, badshares, mhashrate, mhashrate2, stable, logs, errors
 
     if stable: 
         totalhashrate = float(mhashrate + mhashrate2)
@@ -279,8 +293,14 @@ def clear():
     os.system('cls' if os.name=='nt' else 'clear')
 
 def main(argv):
-    logging.info('Main function started')
-    global pool_address, pool_port, soc, restart
+    global pool_address, pool_port, soc, restart, logs, errors
+    # File for Mining actions
+    logs = setup_logger('miner_logs','miner_logs.log')
+     # File for errors and exceptions
+    errors = setup_logger('errors','exceptions.log')
+   
+    logs.info('Main function started')
+    
     # This sections grabs pool adress and port from Duino-Coin GitHub file
     # Serverip file URL
     serverip = ("https://raw.githubusercontent.com/"
@@ -296,8 +316,8 @@ def main(argv):
     pool_address = content[0] #official server
     #pool_address = "213.160.170.230" #test server
     # Line 2 = port
-    pool_port = int(content[1]) #official server
-    # pool_port = 2812 #For debugging only
+    # pool_port = int(content[1]) #official server
+    pool_port = 2812 #For debugging only
     # pool_port = int(2811) #test server
     # This section connects and logs user to the server
     clear()
@@ -320,15 +340,15 @@ def main(argv):
     statsthread = threading.Thread(target=stats)
     statsthread.daemon = True
     minethread.start()
-    logging.info('Starting Mining Thread')
+    logs.info('Starting Mining Thread')
     statsthread.start()
-    logging.info('Starting Stats Thread')
+    logs.info('Starting Stats Thread')
     donation()
     if secondplatform == "y":
         minethread2 = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
         minethread2.daemon = True
         minethread2.start()
-        logging.info('Starting 2nd Mining Thread')
+        logs.info('Starting 2nd Mining Thread')
     while True:
         time.sleep(1)
         
@@ -337,5 +357,5 @@ if __name__ == '__main__':
     try:
         main(sys.argv)
     except Exception as e:
-        logging.error(e)
+        errors.error(e,exc_info=True)
     input()
