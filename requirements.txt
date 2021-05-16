@@ -6,3 +6,4 @@ psutil
 gputil
 tabulate
 requests
+logging
