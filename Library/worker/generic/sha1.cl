@@ -309,6 +309,7 @@ static unsigned char hash_function(__private const unsigned int *pass,
 	unsigned int padding = 0x80 << padding_offset; 
     unsigned int v = mod(pass_len,64); 
 	
+	unsigned int cur_loop_index_16;
     unsigned int W[0x10]={0};           
     int loops=plen;                     
     int curloop=0;                      
@@ -320,7 +321,7 @@ static unsigned char hash_function(__private const unsigned int *pass,
     State[4] = 0xc3d2e1f0;              
                                         
                                         
-    while (loops>0)     
+    while (loops>16)     
     {                   
         W[0x0]=0x0;     
         W[0x1]=0x0;     
@@ -339,28 +340,34 @@ static unsigned char hash_function(__private const unsigned int *pass,
         W[0xE]=0x0;     
         W[0xF]=0x0;     
            
-		unsigned int cur_loop_index_16 = curloop*16;
+		cur_loop_index_16 = curloop*16;
         for (int m=0;loops!=0 && m<16;m++)          
         {                                           
             W[m] ^= SWAP(pass[m + cur_loop_index_16]);       
             loops--;                                
         }                                           
-                                                    
-        if (loops == 0 && v != 0)        
-        {                                           
-              
-            //int v = mod(pass_len,64);                 
-            W[v/4] |= SWAP(padding);                  
-            if ((pass_len & 0x3B) != 0x3B)              
-            {                                       
-                /* Let's add length */              
-                W[0x0F] = pass_len*8;                 
-            }                                       
-        }                                           
-                                                    
+                                                                                                                                                 
         sha1_process2(W,State);                     
         curloop++;                                  
-    }                                               
+    } 
+	
+	cur_loop_index_16 = curloop*16;	
+	for (int m=0;loops!=0 && m<16;m++)          
+    {                                           
+            W[m] ^= SWAP(pass[m + cur_loop_index_16]);       
+            loops--;                                
+    }                                          
+              
+    //int v = mod(pass_len,64);                 
+    W[v/4] |= SWAP(padding);                  
+    if ((pass_len & 0x3B) != 0x3B)              
+    {                                       
+        /* Let's add length */              
+        W[0x0F] = pass_len*8;                 
+    }  
+	
+	sha1_process2(W,State); 	
+   
                             
     if (mod(plen,16) == 0)    
     {                       
