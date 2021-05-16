@@ -29,7 +29,6 @@ import requests
 import traceback
 
 
-
 colorama.init()
 gpus = GPUtil.getGPUs()
 soc = socket.socket()
@@ -325,11 +324,7 @@ def main(argv):
 if __name__ == '__main__':
     try:
         main(sys.argv)
-    except:
-        if not Path("miner_logs.txt").is_file():
-            with open("miner_logs.txt", "wb") as f:
-                f.write(traceback.print_exc)
-                f.write('Exceptions:')
-                f.write(traceback.print_exception)
-        traceback.print_exc()
+    except Exception as e:
+        with open("miner_logs.txt", "a") as logfile:
+            traceback.print_exc(file=logfile)
     input()
