@@ -331,7 +331,5 @@ if __name__ == '__main__':
                 f.write(traceback.print_exc)
                 f.write('Exceptions:')
                 f.write(traceback.print_exception)
-                f.write('Last exception')
-                f.write(traceback.print_last)
         traceback.print_exc()
     input()
