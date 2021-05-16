@@ -316,8 +316,8 @@ def main(argv):
     pool_address = content[0] #official server
     #pool_address = "213.160.170.230" #test server
     # Line 2 = port
-    # pool_port = int(content[1]) #official server
-    pool_port = 2812 #For debugging only
+    pool_port = int(content[1]) #official server
+    # pool_port = 2812 #For debugging only
     # pool_port = int(2811) #test server
     # This section connects and logs user to the server
     clear()
