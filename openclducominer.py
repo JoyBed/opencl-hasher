@@ -27,6 +27,8 @@ import pyopencl
 import numpy
 import requests
 import traceback
+import logging
+
 
 
 colorama.init()
@@ -42,6 +44,10 @@ mhashrate = float()
 mhashrate2 = float()
 restart = 0
 stable = False
+# File for Mining actions
+logging.basicConfig(filename='miner_logs.txt', filemode='w', level=logging.INFO)
+# File for errors and exceptions
+logging.basicConfig(filename='exceptions.log', filemode='w', level=logging.ERROR)
 
 def reconnect():
     global pool_address,pool_port,soc,restart,stable
@@ -146,7 +152,7 @@ def mine(ctx, opencl_algos, username):
         
             expected_hash = bytearray.fromhex(job[1])
             last_hash = job[0].encode('ascii')
-
+            logging.info(f'Last Processed Hash: {last_hash}')
             hashingStartTime = time.time()
 
             real_difficulty = 100 * int(difficulty)+1
@@ -165,9 +171,11 @@ def mine(ctx, opencl_algos, username):
                 # If result was good
                 if feedback == "GOOD":
                     goodshares += 1
+                    logging.info("Good Job")
                 # If result was incorrect
                 elif feedback == "BAD":
                     badshares += 1
+                    logging.info("Bad Job")
 
 
 def stats():
@@ -271,6 +279,7 @@ def clear():
     os.system('cls' if os.name=='nt' else 'clear')
 
 def main(argv):
+    logging.info('Main function started')
     global pool_address, pool_port, soc, restart
     # This sections grabs pool adress and port from Duino-Coin GitHub file
     # Serverip file URL
@@ -311,20 +320,22 @@ def main(argv):
     statsthread = threading.Thread(target=stats)
     statsthread.daemon = True
     minethread.start()
+    logging.info('Starting Mining Thread')
     statsthread.start()
+    logging.info('Starting Stats Thread')
     donation()
     if secondplatform == "y":
         minethread2 = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
         minethread2.daemon = True
         minethread2.start()
-    
+        logging.info('Starting 2nd Mining Thread')
     while True:
         time.sleep(1)
+        
 
 if __name__ == '__main__':
     try:
         main(sys.argv)
     except Exception as e:
-        with open("miner_logs.txt", "a") as logfile:
-            traceback.print_exc(file=logfile)
+        logging.error(e)
     input()

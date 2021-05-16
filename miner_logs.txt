@@ -1,0 +1,14 @@
+INFO:root:Main function started
+INFO:root:Starting Mining Thread
+INFO:root:Starting Stats Thread
+INFO:root:Last Processed Hash: b'bcecc1a1f599c158538bfac6b897a6c897587204'
+INFO:root:Good Job
+INFO:root:Last Processed Hash: b'bcecc1a1f599c158538bfac6b897a6c897587204'
+INFO:root:Good Job
+INFO:root:Last Processed Hash: b'bcecc1a1f599c158538bfac6b897a6c897587204'
+INFO:root:Good Job
+INFO:root:Last Processed Hash: b'bcecc1a1f599c158538bfac6b897a6c897587204'
+INFO:root:Good Job
+INFO:root:Last Processed Hash: b'bcecc1a1f599c158538bfac6b897a6c897587204'
+INFO:root:Good Job
+INFO:root:Last Processed Hash: b'bcecc1a1f599c158538bfac6b897a6c897587204'
