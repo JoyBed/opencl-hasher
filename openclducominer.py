@@ -326,5 +326,12 @@ if __name__ == '__main__':
     try:
         main(sys.argv)
     except:
+        if not Path("miner_logs.txt").is_file():
+            with open("miner_logs.txt", "wb") as f:
+                f.write(traceback.print_exc)
+                f.write('Exceptions:')
+                f.write(traceback.print_exception)
+                f.write('Last exception')
+                f.write(traceback.print_last)
         traceback.print_exc()
     input()
