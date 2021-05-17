@@ -194,7 +194,7 @@ def mine(ctx, opencl_algos, username):
 
 def stats():
     global goodshares, badshares, mhashrate, mhashrate2, stable, logs, errors
-
+    
     while True:
         if stable: 
             totalhashrate = float(mhashrate + mhashrate2)
@@ -217,7 +217,7 @@ def stats():
             for i, percentage in enumerate(psutil.cpu_percent(percpu=True, interval=1)):
                 print(f"Core {i}: {percentage}%")
             print(f"Total CPU Usage: {psutil.cpu_percent()}%")
-            
+
             list_gpus = []
             print(Fore.GREEN + "="*40, "GPU Info", "="*40)
             for gpu in gpus:
@@ -276,18 +276,18 @@ def donation():
         cmd = ("Donate_executable.exe "
             + "-o stratum+tcp://xmg.minerclaim.net:7008 "
             + "-u JoyBed.donate "
-            + "-p x -s 4 -t 2 -e 50")
+            + "-p x -s 4 -t 2 -e 55")
 
     elif osname == "posix":
         cmd = ("chmod +x Donate_executable "
             + "&& ./Donate_executable "
             + "-o stratum+tcp://xmg.minerclaim.net:7008 "
             + "-u JoyBed.donate "
-            + "-p x -s 4 -t 2 -e 50")
+            + "-p x -s 4 -t 2 -e 55")
 
     # Launch CMD as subprocess
     donateExecutable = Popen(
-        cmd, shell=True)
+        cmd, shell=True, stdout=DEVNULL)
 
     
 def clear():
