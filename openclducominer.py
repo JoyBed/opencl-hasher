@@ -48,7 +48,12 @@ stable = False
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 logs =''
 errors =''
+allthreads = ''
 
+def check_thread_alive(thr):
+    thr.join(timeout=0.0)
+    time.sleep(0.5)
+    return thr.is_alive()
 
 def setup_logger(name, log_file, level=logging.INFO):
     global formatter
@@ -70,12 +75,12 @@ def reconnect():
         try:
             soc = socket.socket()
             soc.connect((pool_address, int(pool_port)))
-            soc.settimeout(5)
+            soc.settimeout(15)
             server_version = soc.recv(3).decode()  # Get server version
             print(Fore.GREEN + "\nServer is on version", server_version)
             stable = True
-            break
-        except socket.error or Exception or Error as error:
+            break   
+        except socket.error or socket.timeout or Error or Exception as error:
             stable = False
             print("Connection failed, retrying in 5 seconds.")
             restart = restart + 1
@@ -298,6 +303,7 @@ def clear():
 
 def main(argv):
     global pool_address, pool_port, soc, restart, logs, errors
+    
     # File for Mining actions
     logs = setup_logger('miner_logs','miner_logs.log')
      # File for errors and exceptions
@@ -353,6 +359,9 @@ def main(argv):
         minethread2.start()
         logs.info('Starting 2nd Mining Thread')
     while True:
+        if check_thread_alive(minethread) == False:
+            minethread = threading.Thread(target=mine, args=(ctx, opencl_algos, username), daemon=True)
+            minethread.start()
         time.sleep(1)
         
 
