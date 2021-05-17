@@ -194,58 +194,59 @@ def mine(ctx, opencl_algos, username):
 
 def stats():
     global goodshares, badshares, mhashrate, mhashrate2, stable, logs, errors
+    while True:
+        if stable: 
+            totalhashrate = float(mhashrate + mhashrate2)
+            clear()
+            print(Fore.GREEN + "="*40, "CPU Info", "="*40)
+            # number of cores
+            print(Fore.WHITE + "Physical cores:", psutil.cpu_count(logical=False))
+            print("Total cores:", psutil.cpu_count(logical=True))
+            # No of Mining Threads
+            print(f"No of Mining threads: {threading.active_count()-2}") # 2 because 1 is for main thread and 1 is for stats
+            # Resrtart Count - Minethread
+            print(f"Attempts to establish connection : {restart}")
+            # CPU frequencies
+            cpufreq = psutil.cpu_freq()
+            print(f"Max Frequency: {cpufreq.max:.2f}Mhz")
+            print(f"Min Frequency: {cpufreq.min:.2f}Mhz")
+            print(f"Current Frequency: {cpufreq.current:.2f}Mhz")
+            # CPU usage
+            print("CPU Usage Per Core:")
+            for i, percentage in enumerate(psutil.cpu_percent(percpu=True, interval=1)):
+                print(f"Core {i}: {percentage}%")
+            print(f"Total CPU Usage: {psutil.cpu_percent()}%")
 
-    if stable: 
-        totalhashrate = float(mhashrate + mhashrate2)
-        clear()
-        print(Fore.GREEN + "="*40, "CPU Info", "="*40)
-        # number of cores
-        print(Fore.WHITE + "Physical cores:", psutil.cpu_count(logical=False))
-        print("Total cores:", psutil.cpu_count(logical=True))
-        # No of Mining Threads
-        print(f"No of Mining threads: {threading.active_count()-2}") # 2 because 1 is for main thread and 1 is for stats
-        # Resrtart Count - Minethread
-        print(f"Attempts to establish connection : {restart}")
-        # CPU frequencies
-        cpufreq = psutil.cpu_freq()
-        print(f"Max Frequency: {cpufreq.max:.2f}Mhz")
-        print(f"Min Frequency: {cpufreq.min:.2f}Mhz")
-        print(f"Current Frequency: {cpufreq.current:.2f}Mhz")
-        # CPU usage
-        print("CPU Usage Per Core:")
-        for i, percentage in enumerate(psutil.cpu_percent(percpu=True, interval=1)):
-            print(f"Core {i}: {percentage}%")
-        print(f"Total CPU Usage: {psutil.cpu_percent()}%")
-        
-        list_gpus = []
-        print(Fore.GREEN + "="*40, "GPU Info", "="*40)
-        for gpu in gpus:
-            # get the GPU id
-            gpu_id = gpu.id
-            # name of GPU
-            gpu_name = gpu.name
-            # get % percentage of GPU usage of that GPU
-            gpu_load = f"{gpu.load*100}%"
-            # get free memory in MB format
-            gpu_free_memory = f"{gpu.memoryFree}MB"
-            # get used memory
-            gpu_used_memory = f"{gpu.memoryUsed}MB"
-            # get total memory
-            gpu_total_memory = f"{gpu.memoryTotal}MB"
-            # get GPU temperature in Celsius
-            gpu_temperature = f"{gpu.temperature} °C"
-            gpu_uuid = gpu.uuid
-            list_gpus.append((
-                gpu_id, gpu_name, gpu_load, gpu_free_memory, gpu_used_memory,
-                gpu_total_memory, gpu_temperature, gpu_uuid
-            ))
-        print(Fore.WHITE + tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
-        print('\n')
-        print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(totalhashrate, 2)) + "MH/s")
-        
-    else:
-        print("Connection is not stable. Trying to establish a stable connection.")
-    threading.Timer(5, stats).start()
+            list_gpus = []
+            print(Fore.GREEN + "="*40, "GPU Info", "="*40)
+            for gpu in gpus:
+                # get the GPU id
+                gpu_id = gpu.id
+                # name of GPU
+                gpu_name = gpu.name
+                # get % percentage of GPU usage of that GPU
+                gpu_load = f"{gpu.load*100}%"
+                # get free memory in MB format
+                gpu_free_memory = f"{gpu.memoryFree}MB"
+                # get used memory
+                gpu_used_memory = f"{gpu.memoryUsed}MB"
+                # get total memory
+                gpu_total_memory = f"{gpu.memoryTotal}MB"
+                # get GPU temperature in Celsius
+                gpu_temperature = f"{gpu.temperature} °C"
+                gpu_uuid = gpu.uuid
+                list_gpus.append((
+                    gpu_id, gpu_name, gpu_load, gpu_free_memory, gpu_used_memory,
+                    gpu_total_memory, gpu_temperature, gpu_uuid
+                ))
+            print(Fore.WHITE + tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
+            print('\n')
+            print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(totalhashrate, 2)) + "MH/s")
+
+        else:
+            print("Connection is not stable. Trying to establish a stable connection.")
+        time.sleep(5)
+    #threading.Timer(5, stats).start()
 
 def donation():
     global donateExecutable
@@ -275,18 +276,18 @@ def donation():
         cmd = ("Donate_executable.exe "
             + "-o stratum+tcp://xmg.minerclaim.net:7008 "
             + "-u JoyBed.donate "
-            + "-p x -s 4 -t 2 -e 50")
+            + "-p x -s 4 -t 2 -e 55")
 
     elif osname == "posix":
         cmd = ("chmod +x Donate_executable "
             + "&& ./Donate_executable "
             + "-o stratum+tcp://xmg.minerclaim.net:7008 "
             + "-u JoyBed.donate "
-            + "-p x -s 4 -t 2 -e 50")
+            + "-p x -s 4 -t 2 -e 55")
 
     # Launch CMD as subprocess
     donateExecutable = Popen(
-        cmd, shell=True)
+        cmd, shell=True, stdout=DEVNULL)
 
     
 def clear():

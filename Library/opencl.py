@@ -88,7 +88,7 @@ class opencl_interface:
         src.replace('\r\n','\n')
 
         # Kernel function instantiation. Build returns self.
-        prg = cl.Program(self.ctx, src).build()
+        prg = cl.Program(self.ctx, src).build(cache_dir='./')
         return prg
 
 
