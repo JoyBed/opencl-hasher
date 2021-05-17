@@ -166,13 +166,13 @@ def mine(ctx, opencl_algos, username):
         
             expected_hash = bytearray.fromhex(job[1])
             last_hash = job[0].encode('ascii')
-            logs.info(f'Last Processed Hash: {last_hash}')
+            logs.info(f'Last Processed Hash: {expected_hash}')
             hashingStartTime = time.time()
 
             real_difficulty = 100 * int(difficulty)+1
             #stop_mining = False
 
-            ducos = sha1(opencl_algos, ctx, last_hash, expected_hash, 0, real_difficulty, 1500)
+            ducos = sha1(opencl_algos, ctx, last_hash, expected_hash, 0, real_difficulty, 1000)
             if ducos != None:
                 hashingStopTime = time.time()
                 timeDifference = hashingStopTime - hashingStartTime
@@ -227,6 +227,7 @@ def stats():
                 gpu_name = gpu.name
                 # get % percentage of GPU usage of that GPU
                 gpu_load = f"{gpu.load*100}%"
+                logs.info(f"GPU LOAD: {gpu.load*100}%")
                 # get free memory in MB format
                 gpu_free_memory = f"{gpu.memoryFree}MB"
                 # get used memory
@@ -343,7 +344,7 @@ def main(argv):
     logs.info('Starting Mining Thread')
     statsthread.start()
     logs.info('Starting Stats Thread')
-    donation()
+    # donation()
     if secondplatform == "y":
         minethread2 = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
         minethread2.daemon = True
