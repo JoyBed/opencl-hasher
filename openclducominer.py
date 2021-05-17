@@ -10,11 +10,12 @@ import time
 import urllib.request
 import binascii
 import functools, operator
+from GPUtil.GPUtil import GPU
 import colorama
 import threading
 import psutil
 import GPUtil
-from binascii import hexlify, unhexlify
+from binascii import Error, hexlify, unhexlify
 from Library import opencl
 from Library.opencl_information import opencl_information
 from collections import deque
@@ -48,10 +49,11 @@ formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 logs =''
 errors =''
 
+
 def setup_logger(name, log_file, level=logging.INFO):
     global formatter
 
-    handler = logging.FileHandler(log_file)        
+    handler = logging.FileHandler(log_file, mode='w')        
     handler.setFormatter(formatter)
 
     logger = logging.getLogger(name)
@@ -68,17 +70,18 @@ def reconnect():
         try:
             soc = socket.socket()
             soc.connect((pool_address, int(pool_port)))
-            soc.settimeout(10)
+            soc.settimeout(5)
             server_version = soc.recv(3).decode()  # Get server version
             print(Fore.GREEN + "\nServer is on version", server_version)
             stable = True
             break
-        except socket.error as error:
+        except socket.error or Exception or Error as error:
             stable = False
             print("Connection failed, retrying in 5 seconds.")
-            errors.error(str(error), exc_info=True)
             restart = restart + 1
-            time.sleep(5)
+            time.sleep(6)
+            errors.info("Connection to server failed due to the following exception")
+            errors.info(error,exc_info=True)
             continue     
     
 
@@ -102,10 +105,9 @@ def sendresult(result,timeDifference,difficulty) -> bool:
         soc.send(bytes(str(result)+ ","+ str(hashrate)+ ",OpenCL Miner",encoding="utf8"))
         # Get feedback about the result
         feedback = soc.recv(1024).decode().rstrip("\n")
-    except Exception as e:
-        print(e)
+    except Exception or Error as e:
         to_return = False
-        errors.error(e,exc_info=True)
+        errors.info(error,exc_info=True)
         return to_return
     
     # If result was good
@@ -140,17 +142,17 @@ def mine(ctx, opencl_algos, username):
                     + str(username)
                     + ",EXTREME", # will change
                     encoding="utf8"))
-            except Exception as error:
+            except Exception or Error as error:
                 connected = False
-                errors.error(error,exc_info=True)
+                errors.info(error,exc_info=True)
                 continue
 
             try:
                 # Receive work
                 job = soc.recv(128).decode().rstrip("\n")
-            except Exception as error:
+            except Exception or Error as error:
                 connected = False
-                errors.error(error,exc_info=True)
+                errors.info(error,exc_info=True)
                 continue
             if job == '':
                 connected = False
@@ -166,7 +168,7 @@ def mine(ctx, opencl_algos, username):
         
             expected_hash = bytearray.fromhex(job[1])
             last_hash = job[0].encode('ascii')
-            logs.info(f'Last Processed Hash: {expected_hash}')
+            logs.info(f'Last Processed Hash: {job[1]}')
             hashingStartTime = time.time()
 
             real_difficulty = 100 * int(difficulty)+1
@@ -300,7 +302,7 @@ def main(argv):
     logs = setup_logger('miner_logs','miner_logs.log')
      # File for errors and exceptions
     errors = setup_logger('errors','exceptions.log')
-   
+    
     logs.info('Main function started')
     
     # This sections grabs pool adress and port from Duino-Coin GitHub file
@@ -344,7 +346,7 @@ def main(argv):
     logs.info('Starting Mining Thread')
     statsthread.start()
     logs.info('Starting Stats Thread')
-    # donation()
+    donation()
     if secondplatform == "y":
         minethread2 = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
         minethread2.daemon = True
@@ -357,6 +359,6 @@ def main(argv):
 if __name__ == '__main__':
     try:
         main(sys.argv)
-    except Exception as e:
-        errors.error(e,exc_info=True)
+    except KeyboardInterrupt or Error or Exception as error:
+        errors.info(error,exc_info=True)
     input()
