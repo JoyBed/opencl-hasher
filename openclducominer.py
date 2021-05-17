@@ -194,6 +194,7 @@ def mine(ctx, opencl_algos, username):
 
 def stats():
     global goodshares, badshares, mhashrate, mhashrate2, stable, logs, errors
+    
     while True:
         if stable: 
             totalhashrate = float(mhashrate + mhashrate2)
@@ -242,11 +243,10 @@ def stats():
             print(Fore.WHITE + tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
             print('\n')
             print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(totalhashrate, 2)) + "MH/s")
-
+            
         else:
             print("Connection is not stable. Trying to establish a stable connection.")
         time.sleep(5)
-    #threading.Timer(5, stats).start()
 
 def donation():
     global donateExecutable
@@ -335,7 +335,6 @@ def main(argv):
     clear()
     opencl_algos = opencl.opencl_algos(int(platform), debug, write_combined_file,inv_memory_density=10,openclDevice=0)
     ctx = opencl_algos.cl_sha1_init()
-    # stats()
     minethread = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
     minethread.daemon = True
     statsthread = threading.Thread(target=stats)
