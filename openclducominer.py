@@ -48,7 +48,7 @@ stable = False
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 logs =''
 errors =''
-
+allthreads = ''
 
 def setup_logger(name, log_file, level=logging.INFO):
     global formatter
@@ -297,7 +297,7 @@ def clear():
     os.system('cls' if os.name=='nt' else 'clear')
 
 def main(argv):
-    global pool_address, pool_port, soc, restart, logs, errors
+    global pool_address, pool_port, soc, restart, logs, errors, allthreads
     # File for Mining actions
     logs = setup_logger('miner_logs','miner_logs.log')
      # File for errors and exceptions
@@ -353,6 +353,12 @@ def main(argv):
         minethread2.start()
         logs.info('Starting 2nd Mining Thread')
     while True:
+        allthreads = threading.enumerate()
+        for thread in allthreads: 
+            if not thread.is_alive():
+                errors.info(f"Thread: {thread} unexpectedly terminated. Restarting it.....")
+                thread.start()
+        
         time.sleep(1)
         
 
