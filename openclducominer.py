@@ -194,7 +194,7 @@ def mine(ctx, opencl_algos, username):
 
 def stats():
     global goodshares, badshares, mhashrate, mhashrate2, stable, logs, errors
-    
+
     while True:
         if stable: 
             totalhashrate = float(mhashrate + mhashrate2)
