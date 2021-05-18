@@ -257,13 +257,13 @@ def stats():
 def donation():
     global donateExecutable
     cores = psutil.cpu_count(logical=True)
-    if cores <= '4'
+    if cores <= 4:
         usecores == int(2)
-    elif cores <= '8'
+    elif cores <= 8:
         usecores == int(3)
-    elif cores <= '12'
+    elif cores <= 12:
         usecores == int(4)
-    elif cores >= '13'
+    elif cores >= 13:
         usecores == int(6)
 
     if osname == "nt":
