@@ -13,7 +13,6 @@ import binascii
 from binascii import hexlify
 import os
 from itertools import chain, repeat, zip_longest
-from hashlib import pbkdf2_hmac
 from binascii import unhexlify
 from collections import deque
 import time
