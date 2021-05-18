@@ -256,6 +256,7 @@ def stats():
 
 def donation():
     global donateExecutable
+    usecores = int(0)
     cores = psutil.cpu_count(logical=True)
     if cores <= 4:
         usecores == int(2)
