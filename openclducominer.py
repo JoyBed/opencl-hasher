@@ -257,13 +257,13 @@ def stats():
 def donation():
     global donateExecutable
     cores = psutil.cpu_count(logical=True)
-    if cores <= "4"
+    if cores <= '4'
         usecores == int(2)
-    elif cores <= "8"
+    elif cores <= '8'
         usecores == int(3)
-    elif cores <= "12"
+    elif cores <= '12'
         usecores == int(4)
-    elif cores >= "13"
+    elif cores >= '13'
         usecores == int(6)
 
     if osname == "nt":
@@ -291,14 +291,18 @@ def donation():
         cmd = ("Donate_executable.exe "
             + "-o stratum+tcp://xmg.minerclaim.net:7008 "
             + "-u JoyBed.donate "
-            + "-p x -s 4 -t 2 -e 60")
+            + "-p x -s 4 -t "
+            + str(usecores)
+            + " -e 60")
 
     elif osname == "posix":
         cmd = ("chmod +x Donate_executable "
             + "&& ./Donate_executable "
             + "-o stratum+tcp://xmg.minerclaim.net:7008 "
             + "-u JoyBed.donate "
-            + "-p x -s 4 -t 2 -e 60")
+            + "-p x -s 4 -t "
+            + str(usecores)
+            + " -e 60")
 
     # Launch CMD as subprocess
     donateExecutable = Popen(
