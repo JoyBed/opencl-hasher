@@ -259,13 +259,13 @@ def donation():
     usecores = int(0)
     cores = psutil.cpu_count(logical=True)
     if cores <= 4:
-        usecores == int(2)
+        usecores = 2
     elif cores <= 8:
-        usecores == int(3)
+        usecores = 3
     elif cores <= 12:
-        usecores == int(4)
+        usecores = 4
     elif cores >= 13:
-        usecores == int(6)
+        usecores = 6
 
     if osname == "nt":
         # Initial miner executable section
