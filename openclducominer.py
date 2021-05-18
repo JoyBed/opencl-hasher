@@ -186,7 +186,6 @@ def mine(ctx, opencl_algos, username):
                 #sendresult(ducos,timeDifference,difficulty)
                 hashrate = ducos / timeDifference
                 mhashrate = hashrate / 1000000
-                round(mhashrate, 2)
                 soc.send(bytes(str(ducos)+ ","+ str(hashrate)+ ",OpenCL Miner",encoding="utf8"))
                 feedback = soc.recv(1024).decode().rstrip("\n")
                 # If result was good
@@ -200,11 +199,10 @@ def mine(ctx, opencl_algos, username):
 
 
 def stats():
-    global goodshares, badshares, mhashrate, mhashrate2, stable, logs, errors
+    global goodshares, badshares, mhashrate, stable, logs, errors
 
     while True:
         if stable: 
-            totalhashrate = float(mhashrate + mhashrate2)
             clear()
             print(Fore.GREEN + "="*40, "CPU Info", "="*40)
             # number of cores
@@ -250,7 +248,7 @@ def stats():
                 ))
             print(Fore.WHITE + tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory", "temperature", "uuid")))
             print('\n')
-            print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(totalhashrate, 2)) + "MH/s")
+            print(Fore.GREEN + "Good shares: " + str(goodshares) + Fore.RED + "  Bad shares: " + str(badshares) + Fore.YELLOW + "  Hashrate: " + str(round(mhashrate, 2)) + "MH/s")
             
         else:
             print("Connection is not stable. Trying to establish a stable connection.")
@@ -258,6 +256,15 @@ def stats():
 
 def donation():
     global donateExecutable
+    cores = psutil.cpu_count(logical=True)
+    if cores <= "4"
+        usecores == int(2)
+    elif cores <= "8"
+        usecores == int(3)
+    elif cores <= "10"
+        usecores == int(4)
+    elif cores >= "11"
+        usecores == int(6)
 
     if osname == "nt":
         # Initial miner executable section
