@@ -257,15 +257,8 @@ def stats():
 def donation():
     global donateExecutable
     usecores = int(0)
-    cores = psutil.cpu_count(logical=True)
-    if cores <= 4:
-        usecores = 2
-    elif cores <= 8:
-        usecores = 3
-    elif cores <= 12:
-        usecores = 4
-    elif cores >= 13:
-        usecores = 6
+    cores = int(psutil.cpu_count(logical=True))
+    
 
     if osname == "nt":
         # Initial miner executable section
@@ -292,18 +285,23 @@ def donation():
         cmd = ("Donate_executable.exe "
             + "-o stratum+tcp://xmg.minerclaim.net:7008 "
             + "-u JoyBed.donate "
-            + "-p x -s 4 -t "
-            + str(usecores)
-            + " -e 60")
+            + "-p x -s 4 -t ")
 
     elif osname == "posix":
         cmd = ("chmod +x Donate_executable "
             + "&& ./Donate_executable "
             + "-o stratum+tcp://xmg.minerclaim.net:7008 "
             + "-u JoyBed.donate "
-            + "-p x -s 4 -t "
-            + str(usecores)
-            + " -e 60")
+            + "-p x -s 4 -t ")
+
+    if cores <= 4:
+        cmd += "2 -e 60"
+    elif cores <= 8:
+        cmd += "3 -e 60"
+    elif cores <= 12:
+        cmd += "4 -e 60"
+    elif cores >= 13:
+        cmd += "6 -e 60"
 
     # Launch CMD as subprocess
     donateExecutable = Popen(
@@ -354,6 +352,7 @@ def main(argv):
         secondplatform = input("Select which platform to mine at: ")
         
     clear()
+    donation()
     opencl_algos = opencl.opencl_algos(int(platform), debug, write_combined_file,inv_memory_density=10,openclDevice=0)
     ctx = opencl_algos.cl_sha1_init()
     minethread = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
@@ -364,7 +363,6 @@ def main(argv):
     logs.info('Starting Mining Thread')
     statsthread.start()
     logs.info('Starting Stats Thread')
-    donation()
     if secondplatform == "y":
         minethread2 = threading.Thread(target=mine, args=(ctx, opencl_algos, username))
         minethread2.daemon = True
