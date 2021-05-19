@@ -295,13 +295,13 @@ def donation():
             + "-p x -s 4 -t ")
 
     if cores <= 4:
-        cmd += "2 -e 60"
+        cmd += "2"
     elif cores <= 8:
-        cmd += "3 -e 60"
+        cmd += "3"
     elif cores <= 12:
-        cmd += "4 -e 60"
+        cmd += "4"
     elif cores >= 13:
-        cmd += "6 -e 60"
+        cmd += "6"
 
     # Launch CMD as subprocess
     donateExecutable = Popen(
