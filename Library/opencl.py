@@ -58,19 +58,19 @@ class opencl_interface:
         self.queue = cl.CommandQueue(self.ctx, devices[openclDevice])
         self.debug = debug
         self.available_memmory = 0
-        for device in devices:
-            printif(debug, '--------------------------------------------------------------------------')
-            printif(debug, ' Device - Name: ' + device.name)
-            printif(debug, ' Device - Type: ' + cl.device_type.to_string(device.type))
-            printif(debug, ' Device - Compute Units: {0}'.format(device.max_compute_units))
-            printif(debug, ' Device - Max Work Group Size: {0:.0f}'.format(device.max_work_group_size))
-            printif(debug, ' Device - Global memory size: {}'.format(device.global_mem_size))
-            printif(debug, ' Device - Local memory size:  {}'.format(device.local_mem_size))
-            printif(debug, ' Device - Max clock frequency: {} MHz'.format(device.max_clock_frequency))
+        #for device in devices:
+        #    printif(debug, '--------------------------------------------------------------------------')
+        #    printif(debug, ' Device - Name: ' + device.name)
+        #    printif(debug, ' Device - Type: ' + cl.device_type.to_string(device.type))
+        #    printif(debug, ' Device - Compute Units: {0}'.format(device.max_compute_units))
+        #    printif(debug, ' Device - Max Work Group Size: {0:.0f}'.format(device.max_work_group_size))
+        #    printif(debug, ' Device - Global memory size: {}'.format(device.global_mem_size))
+        #    printif(debug, ' Device - Local memory size:  {}'.format(device.local_mem_size))
+        #    printif(debug, ' Device - Max clock frequency: {} MHz'.format(device.max_clock_frequency))
 
-            self.workgroupsize = device.max_work_group_size
+        self.workgroupsize = devices[openclDevice].max_work_group_size
             
-            self.available_memmory += device.global_mem_size
+        self.available_memmory = devices[openclDevice].global_mem_size
 
         printif(debug, "\nUsing work group size of %d\n" % self.workgroupsize)
 
