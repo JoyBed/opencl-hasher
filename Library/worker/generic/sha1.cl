@@ -16,7 +16,7 @@ unsigned int SWAP(unsigned int val)
     return (rotate(((val) & 0x00FF00FF), 24U) | rotate(((val) & 0xFF00FF00), 8U));
 }
 
-unsigned long count_digits(unsigned long input) {
+unsigned char count_digits(unsigned long input) {
     // counting digits
     if (input < 10000000000) {
         // [10,1]
@@ -425,17 +425,12 @@ static unsigned char hash_function(__private const unsigned int *pass,
 }
 
 void write_digits(unsigned char* output,
-    unsigned int digits_count,
-    unsigned long number) {
-    if(digits_count==0){
-        return;
-    }
-    else {
-        digits_count--;
-        output[digits_count] = '0' + mod(number, 10);
-        number /= 10;
-        write_digits(output,digits_count,number);
-    }
+				unsigned int digits_count,
+				unsigned long number) {
+    for(digits_count;digits_count>0;digits_count--){
+		output[digits_count-1] = '0'+mod(number,10);
+		number /= 10;
+	}
 }
 
 
@@ -461,7 +456,7 @@ __kernel void hash_main(__global unsigned char* last_hash,
     }*/
 
     __private unsigned char string_to_hash[60];
-    unsigned int digits_count;
+    unsigned char digits_count;
     digits_count = 0;
 
     unsigned long start_result = start + idx * batch_size;
