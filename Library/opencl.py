@@ -47,15 +47,15 @@ class opencl_interface:
         self.N = None
         self.wordType = None
         printif(debug, "Using Platform %d:" % platformNum)
-        devices = cl.get_platforms()[platformNum].get_devices()
+        device = cl.get_platforms()[platformNum].get_devices()[openclDevice]
         self.platform_number = platformNum
         # Show devices for the platform, and adjust workgroup size
         # Create the context for GPU/CPU
         # Adjust workgroup size so that we don't run out of RAM:
 
         self.inv_memory_density = inv_memory_density
-        self.ctx = cl.Context(devices)
-        self.queue = cl.CommandQueue(self.ctx, devices[openclDevice])
+        self.ctx = cl.Context([device])
+        self.queue = cl.CommandQueue(self.ctx, device)
         self.debug = debug
         self.available_memmory = 0
         #for device in devices:
