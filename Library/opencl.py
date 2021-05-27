@@ -68,9 +68,9 @@ class opencl_interface:
         #    printif(debug, ' Device - Local memory size:  {}'.format(device.local_mem_size))
         #    printif(debug, ' Device - Max clock frequency: {} MHz'.format(device.max_clock_frequency))
 
-        self.workgroupsize = devices[openclDevice].max_work_group_size
-            
-        self.available_memmory = devices[openclDevice].global_mem_size
+        self.workgroupsize = device.max_work_group_size*8
+        self.computeunits = device.max_compute_units   
+        self.available_memmory = device.local_mem_size
 
         printif(debug, "\nUsing work group size of %d\n" % self.workgroupsize)
 
