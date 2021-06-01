@@ -6,7 +6,7 @@ Implementation of OpenCL SHA1 hashing for DuinoCoin project. The main goal is to
  # Supported Instances : 
   ### Note: Run Multiple Instances at your risk.
    1. GPU Only (Single Instance/ Multiple Instance) : Yes
-   2. CPU OpenCL (Single Instance/ Multiple Instance): No
+   2. CPU OpenCL (Single Instance/ Multiple Instance): Yes
    3. CPU + GPU (Single Instance/ Multiple Instance): No
 
 
