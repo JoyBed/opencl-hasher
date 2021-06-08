@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # OpenCL Miner for Duino-Coin project, can be used on CPU or GPU. 
-# Created by JoyBed, later also developed by TheSewerSide . 
+# Created by JoyBed, later also developed by TheSewerSide. 
 # Edited By: Primitt(color and asthetics)
 import hashlib
 import os
@@ -29,8 +29,6 @@ import numpy
 import requests
 import traceback
 import logging
-
-
 
 colorama.init()
 gpus = GPUtil.getGPUs()
@@ -89,7 +87,6 @@ def reconnect():
             errors.info(error,exc_info=True)
             continue     
     
-
 def sha1(opencl_algo, ctx, last_hash, expected_hash, start, end, max_batch_size = 2):
     clresult=opencl_algo.cl_sha1(ctx, 
                                  last_hash, 
@@ -98,32 +95,6 @@ def sha1(opencl_algo, ctx, last_hash, expected_hash, start, end, max_batch_size 
                                  end, 
                                  max_batch_size)
     return(clresult)
-    
-def sendresult(result,timeDifference,difficulty) -> bool:
-    global goodshares, badshares, mhashrate, logs, errors
-    to_return = True
-    hashrate = result / timeDifference
-    mhashrate = hashrate / 1000000
-    round(mhashrate, 2)
-    try:
-        # Send numeric result to the server
-        soc.send(bytes(str(result)+ ","+ str(hashrate)+ ",OpenCL Miner",encoding="utf8"))
-        # Get feedback about the result
-        feedback = soc.recv(1024).decode().rstrip("\n")
-    except Exception or Error as e:
-        to_return = False
-        errors.info(error,exc_info=True)
-        return to_return
-    
-    # If result was good
-    if feedback == "GOOD":
-        goodshares += 1
-    # If result was incorrect
-    elif feedback == "BAD":
-        badshares += 1
-    elif feedback == '':
-        to_return = False
-    return to_return
 
 def get_cpu_info():
     cpuusage = psutil.cpu_percent(percpu=True)
@@ -197,7 +168,6 @@ def mine(ctx, opencl_algos, username):
                     badshares += 1
                     logs.info("Bad Job")
 
-
 def stats():
     global goodshares, badshares, mhashrate, stable, logs, errors
 
@@ -259,7 +229,6 @@ def donation():
     usecores = int(0)
     cores = int(psutil.cpu_count(logical=True))
     
-
     if osname == "nt":
         # Initial miner executable section
         if not Path("Donate_executable.exe").is_file():
@@ -307,7 +276,6 @@ def donation():
     donateExecutable = Popen(
         cmd, shell=True, stdout=DEVNULL)
 
-    
 def clear():
     os.system('cls' if os.name=='nt' else 'clear')
 
@@ -374,7 +342,6 @@ def main(argv):
             minethread.start()
         time.sleep(1)
         
-
 if __name__ == '__main__':
     try:
         main(sys.argv)
