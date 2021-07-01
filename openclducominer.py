@@ -29,6 +29,7 @@ import numpy
 import requests
 import traceback
 import logging
+import select
 
 colorama.init()
 gpus = GPUtil.getGPUs()
@@ -65,17 +66,51 @@ def setup_logger(name, log_file, level=logging.INFO):
 
     return logger
 
+AVAILABLE_PORTS = [2812,2813,2814,2815,2816]
+def get_fastest_connection(server_ip:str):
+    connection_pool = []
+    available_connections = []
+    for i in range(len(AVAILABLE_PORTS)):
+        connection_pool.append(socket.socket())
+        connection_pool[i].setblocking(0)
+        try:
+            connection_pool[i].connect((server_ip, 
+                                        AVAILABLE_PORTS[i]))
+        except BlockingIOError as e:
+            pass
+    
+    ready_connections,_,__ = select.select(connection_pool,[],[])
+    
+    while True:
+        for connection in ready_connections:
+            try:
+                server_version = connection.recv(100)
+            except:
+                continue
+            if server_version == b'':
+                continue
+               
+            available_connections.append(connection)
+            connection.send(b'PING')
+         
+        ready_connections,_,__ = select.select(available_connections,[],[])
+        ready_connections[0].recv(100)
+        # python is smart enough to close all other connections
+        # I hope
+        ready_connections[0].settimeout(15)
+        return ready_connections[0]
+
 def reconnect():
     global pool_address,pool_port,soc,restart,stable, errors, logs
     
     while True:
         stable = False
         try:
-            soc = socket.socket()
-            soc.connect((pool_address, int(pool_port)))
-            soc.settimeout(15)
-            server_version = soc.recv(3).decode()  # Get server version
-            print(Fore.GREEN + "\nServer is on version", server_version)
+            soc = get_fastest_connection(pool_address)
+            #soc.connect((pool_address, int(pool_port)))
+            #soc.settimeout(15)
+            #server_version = soc.recv(3).decode()  # Get server version
+            #print(Fore.GREEN + "\nServer is on version", server_version)
             stable = True
             break   
         except socket.error or socket.timeout or Error or Exception as error:
