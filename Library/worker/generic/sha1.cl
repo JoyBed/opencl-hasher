@@ -16,7 +16,7 @@ unsigned int SWAP(unsigned int val)
     return (rotate(((val) & 0x00FF00FF), 24U) | rotate(((val) & 0xFF00FF00), 8U));
 }
 
-unsigned char count_digits(unsigned long long input) {
+unsigned char count_digits(unsigned long input) {
     // counting digits
     if (input < 10000000000) {
         // [10,1]
