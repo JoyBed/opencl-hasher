@@ -426,7 +426,7 @@ static unsigned char hash_function(__private const unsigned int *pass,
 
 void write_digits(unsigned char* output,
 				unsigned int digits_count,
-				unsigned long long number) {
+				unsigned long number) {
     for(digits_count;digits_count>0;digits_count--){
 		output[digits_count-1] = '0'+mod(number,10);
 		number /= 10;
@@ -441,10 +441,10 @@ void write_digits(unsigned char* output,
                 
 __kernel void hash_main(__global unsigned char* last_hash, 
     unsigned int last_hash_size,
-    unsigned long long start,
-    __global unsigned long long* result_buffer,
+    unsigned long start,
+    __global unsigned long* result_buffer,
     __global unsigned int* expected_hash,
-    unsigned long long batch_size,
+    unsigned long batch_size,
     __global unsigned char* found)
 {
     unsigned int idx;
@@ -459,9 +459,9 @@ __kernel void hash_main(__global unsigned char* last_hash,
     unsigned char digits_count;
     digits_count = 0;
 
-    unsigned long long start_result = start + idx * batch_size;
-    unsigned long long result;
-    //unsigned long long result_copy;
+    unsigned long start_result = start + idx * batch_size;
+    unsigned long result;
+    unsigned long result_copy;
 
     unsigned int full_size;
     unsigned char equal;
@@ -471,10 +471,9 @@ __kernel void hash_main(__global unsigned char* last_hash,
     for (unsigned char i = 0; i < last_hash_size; i++) {
         string_to_hash[i] = last_hash[i];
     }
-    for (unsigned long long result = start_result;
-				result < start_result+batch_size; result++) {
-        //result = start_result + batch_counter;
-        //result_copy = result;
+    for (unsigned long batch_counter = 0; batch_counter < batch_size; batch_counter++) {
+        result = start_result + batch_counter;
+        result_copy = result;
         if (found[0] == 1) {
             break;
         }
@@ -506,12 +505,11 @@ __kernel void hash_main(__global unsigned char* last_hash,
         for (unsigned char i = 0; i < 5; i++) {
             if (outbuffer[i] != expected_hash[i]) {
                 equal = 0;
-
                 break;
             }
         }*/
 
-        //result = result_copy;
+        result = result_copy;
         if (equal == 1) {
             result_buffer[0] = 1;
             result_buffer[1] = result;
