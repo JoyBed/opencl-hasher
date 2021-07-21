@@ -445,7 +445,8 @@ __kernel void hash_main(__global unsigned char* last_hash,
     unsigned long start,
     __global unsigned long* result_buffer,
     __global unsigned int* expected_hash,
-    unsigned long batch_size)
+    unsigned long batch_size,
+	__global unsigned char* found)
 {	
     unsigned int idx;
     idx = get_global_id(0);
@@ -475,9 +476,9 @@ __kernel void hash_main(__global unsigned char* last_hash,
     for (unsigned long batch_counter = 0; batch_counter < batch_size; batch_counter++) {
         result = start_result + batch_counter;
         //result_copy = result;
-        //if (found[0] == 1) {
-        //    break;
-        //}
+        if (found[0] == 1) {
+            break;
+        }
         // counting digits
         digits_count = count_digits(result);
 
@@ -502,7 +503,7 @@ __kernel void hash_main(__global unsigned char* last_hash,
         if (equal == 1) {
             result_buffer[0] = 1;
             result_buffer[1] = result;
-            //found[0] = 1;
+            found[0] = 1;
             break;
         }
     }
