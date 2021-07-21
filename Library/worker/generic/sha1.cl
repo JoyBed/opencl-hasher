@@ -295,7 +295,7 @@ static void sha1_process2 (const unsigned int *W, unsigned int *digest)
 /* The main hashing function */                 
 static unsigned char hash_function(__private const unsigned int *pass, 
                     int pass_len, 
-                    __global unsigned int* resulting_hash)   
+                    __private unsigned int* resulting_hash)   
 {                                                                                       
     /* pass is only given to SWAP
         and hash is just assigned to p, which is only accessed by p[i] =
@@ -438,22 +438,18 @@ void write_digits(unsigned char* output,
 #undef F0
 #undef F1
 #undef F2
+
+#define last_hash_size 40
                 
 __kernel void hash_main(__global unsigned char* last_hash, 
-    unsigned int last_hash_size,
     unsigned long start,
     __global unsigned long* result_buffer,
     __global unsigned int* expected_hash,
-    unsigned long batch_size,
-    __global unsigned char* found)
-{
+    unsigned long batch_size)
+{	
     unsigned int idx;
     idx = get_global_id(0);
 
-    /*__private unsigned int expected_hash_copy[5];
-    for (unsigned int i = 0; i < 5; i++) {
-        expected_hash_copy[i] = expected_hash[i];
-    }*/
 
     __private unsigned char string_to_hash[60];
     unsigned char digits_count;
@@ -461,11 +457,16 @@ __kernel void hash_main(__global unsigned char* last_hash,
 
     unsigned long start_result = start + idx * batch_size;
     unsigned long result;
-    unsigned long result_copy;
+    //unsigned long result_copy;
 
     unsigned int full_size;
     unsigned char equal;
     
+	__private unsigned int expected_hash_private[5];
+	
+	for (unsigned char i = 0; i < 5; i++) {
+        expected_hash_private[i] = expected_hash[i];
+    }
     
     // copy last_hash to string_to_hash
     for (unsigned char i = 0; i < last_hash_size; i++) {
@@ -473,19 +474,13 @@ __kernel void hash_main(__global unsigned char* last_hash,
     }
     for (unsigned long batch_counter = 0; batch_counter < batch_size; batch_counter++) {
         result = start_result + batch_counter;
-        result_copy = result;
-        if (found[0] == 1) {
-            break;
-        }
+        //result_copy = result;
+        //if (found[0] == 1) {
+        //    break;
+        //}
         // counting digits
         digits_count = count_digits(result);
 
-        // converting integer to string representation
-        // copy number string representation to string_to_hash
-        /*for (char i = digits_count - 1; i > -1; i--) {
-            string_to_hash[last_hash_size + i] = '0' + (mod(result,10));
-            result /= 10;
-        }*/
         write_digits(&string_to_hash[last_hash_size],
                      digits_count,
                      result);
@@ -493,27 +488,21 @@ __kernel void hash_main(__global unsigned char* last_hash,
         full_size = last_hash_size + digits_count;
 
         // nulling rest of the array
-        for (unsigned char i = full_size; i < 60; i++) {
-            string_to_hash[i] = 0;
-        }
+		string_to_hash[full_size] = 0;
+        //for (unsigned char i = full_size; i < 60; i++) {
+        //    string_to_hash[i] = 0;
+        //}
 
         equal = hash_function(string_to_hash,
                         full_size,
-                        expected_hash);
+                        expected_hash_private);
        
-        /*equal = 1;
-        for (unsigned char i = 0; i < 5; i++) {
-            if (outbuffer[i] != expected_hash[i]) {
-                equal = 0;
-                break;
-            }
-        }*/
 
-        result = result_copy;
+        //result = result_copy;
         if (equal == 1) {
             result_buffer[0] = 1;
             result_buffer[1] = result;
-            found[0] = 1;
+            //found[0] = 1;
             break;
         }
     }
