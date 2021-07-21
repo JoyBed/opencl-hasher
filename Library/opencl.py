@@ -110,23 +110,19 @@ class opencl_interface:
 
         # Allocate data
         last_hash_array = np.frombuffer(last_hash,dtype=np.ubyte)
-        last_hash_size_uint = np.uint32(len(last_hash))     
+        #last_hash_size_uint = np.uint32(len(last_hash))     
         result_byte_array = np.zeros(2,dtype=np.uint64)
         expected_hash_array = np.frombuffer(expected_hash,dtype=np.ubyte)
-        found_array = np.zeros(1,dtype=np.ubyte)
 
         # Allocate memory for variables on the device
         last_hash_buffer = cl.Buffer(ctx,
                                      cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR,
                                      hostbuf=last_hash_array)
-        result_byte_array_buffer = cl.Buffer(ctx,cl.mem_flags.WRITE_ONLY | cl.mem_flags.COPY_HOST_PTR,
+        result_byte_array_buffer = cl.Buffer(ctx,cl.mem_flags.WRITE_ONLY | cl.mem_flags.USE_HOST_PTR,
                                              hostbuf=result_byte_array)
         expected_hash_buffer = cl.Buffer(ctx,
                                         cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR,
                                         hostbuf=expected_hash_array)
-        found_buffer = cl.Buffer(ctx,
-                                 cl.mem_flags.READ_WRITE | cl.mem_flags.COPY_HOST_PTR,
-                                 hostbuf=found_array)
 
         batch_size = ((end-start)//self.workgroupsize)+1
         if max_batch_size != -1:
@@ -149,7 +145,6 @@ class opencl_interface:
              
             result_byte_array[0] = 0
             result_byte_array[1] = 1
-            found_array[0] = 0
 
 
             start_uint = np.uint64(i)
@@ -162,12 +157,11 @@ class opencl_interface:
             func(self,
                  pwdim,
                  last_hash_buffer,
-                 last_hash_size_uint, 
+                 #last_hash_size_uint, 
                  result_byte_array_buffer, 
                  expected_hash_buffer,
                  start_uint,
-                 batch_size_uint,
-                 found_buffer)
+                 batch_size_uint)
 
             cl.enqueue_copy(self.queue, 
                             result_byte_array,
@@ -220,8 +214,8 @@ class opencl_algos:
 
     def cl_sha1(self, ctx, last_hash, expected_hash, start, end, max_batch_size = 2):
         prg = ctx[0]
-        def func(s, pwdim, last_hash,last_hash_size, result_bytes_array, expected_hash, start, batch_size, found_buffer, debug_buffer=None):
-            prg.hash_main(s.queue, pwdim, None, last_hash,last_hash_size,start, result_bytes_array, expected_hash, batch_size, found_buffer)
+        def func(s, pwdim, last_hash, result_bytes_array, expected_hash, start, batch_size, debug_buffer=None):
+            prg.hash_main(s.queue, pwdim, None, last_hash,start, result_bytes_array, expected_hash, batch_size)
             
         starting_point = 0
         return self.opencl_ctx.run(func, None, expected_hash, mdPad_64_func, last_hash, start, end, max_batch_size)
