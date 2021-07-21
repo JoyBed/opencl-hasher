@@ -150,7 +150,7 @@ class opencl_interface:
              
             result_byte_array[0] = 0
             result_byte_array[1] = 1
-
+            found_array[0] = 0
 
             start_uint = np.uint64(i)
             #if i+workgroup_size*batch_size > 111802225 and i < 111802225:
