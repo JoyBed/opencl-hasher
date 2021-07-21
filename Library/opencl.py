@@ -68,7 +68,7 @@ class opencl_interface:
         #    printif(debug, ' Device - Local memory size:  {}'.format(device.local_mem_size))
         #    printif(debug, ' Device - Max clock frequency: {} MHz'.format(device.max_clock_frequency))
 
-        self.workgroupsize = device.max_work_group_size*8
+        self.workgroupsize = device.max_work_group_size*20
         self.computeunits = device.max_compute_units   
         self.available_memmory = device.local_mem_size
 
@@ -113,6 +113,7 @@ class opencl_interface:
         #last_hash_size_uint = np.uint32(len(last_hash))     
         result_byte_array = np.zeros(2,dtype=np.uint64)
         expected_hash_array = np.frombuffer(expected_hash,dtype=np.ubyte)
+        found_array = np.zeros(1,dtype=np.ubyte)
 
         # Allocate memory for variables on the device
         last_hash_buffer = cl.Buffer(ctx,
@@ -123,6 +124,10 @@ class opencl_interface:
         expected_hash_buffer = cl.Buffer(ctx,
                                         cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR,
                                         hostbuf=expected_hash_array)
+                                        
+        found_buffer = cl.Buffer(ctx,
+                                 cl.mem_flags.READ_WRITE | cl.mem_flags.COPY_HOST_PTR,
+                                 hostbuf=found_array)
 
         batch_size = ((end-start)//self.workgroupsize)+1
         if max_batch_size != -1:
@@ -161,7 +166,8 @@ class opencl_interface:
                  result_byte_array_buffer, 
                  expected_hash_buffer,
                  start_uint,
-                 batch_size_uint)
+                 batch_size_uint,
+                 found_buffer)
 
             cl.enqueue_copy(self.queue, 
                             result_byte_array,
@@ -214,8 +220,8 @@ class opencl_algos:
 
     def cl_sha1(self, ctx, last_hash, expected_hash, start, end, max_batch_size = 2):
         prg = ctx[0]
-        def func(s, pwdim, last_hash, result_bytes_array, expected_hash, start, batch_size, debug_buffer=None):
-            prg.hash_main(s.queue, pwdim, None, last_hash,start, result_bytes_array, expected_hash, batch_size)
+        def func(s, pwdim, last_hash, result_bytes_array, expected_hash, start, batch_size,found_buffer, debug_buffer=None):
+            prg.hash_main(s.queue, pwdim, None, last_hash,start, result_bytes_array, expected_hash, batch_size,found_buffer)
             
         starting_point = 0
         return self.opencl_ctx.run(func, None, expected_hash, mdPad_64_func, last_hash, start, end, max_batch_size)
