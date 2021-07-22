@@ -489,10 +489,10 @@ __kernel void hash_main(__global unsigned char* last_hash,
         full_size = last_hash_size + digits_count;
 
         // nulling rest of the array
-		string_to_hash[full_size] = 0;
-        //for (unsigned char i = full_size; i < 60; i++) {
-        //    string_to_hash[i] = 0;
-        //}
+	//string_to_hash[full_size] = 0;
+        for (unsigned char i = full_size; i < 60; i++) {
+            string_to_hash[i] = 0;
+        }
 
         equal = hash_function(string_to_hash,
                         full_size,
