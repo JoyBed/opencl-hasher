@@ -99,17 +99,26 @@ def get_fastest_connection(server_ip:str):
         # I hope
         ready_connections[0].settimeout(15)
         return ready_connections[0]
-
+    
+def get_pool():
+    while True:
+        try:
+            resp = requests.get('https://server.duinocoin.com/getPool').json()
+            return resp['ip'], int(resp['port'])
+        except:
+            pass
+        
 def reconnect():
     global pool_address,pool_port,soc,restart,stable, errors, logs
     
     while True:
         stable = False
+        pool_address = get_pool()
         try:
-            soc = get_fastest_connection(pool_address)
-            #soc.connect((pool_address, int(pool_port)))
-            #soc.settimeout(15)
-            #server_version = soc.recv(3).decode()  # Get server version
+            #soc = get_fastest_connection(pool_address)
+            soc.connect((pool_address, int(pool_port)))
+            soc.settimeout(15)
+            server_version = soc.recv(3).decode()  # Get server version
             #print(Fore.GREEN + "\nServer is on version", server_version)
             stable = True
             break   
