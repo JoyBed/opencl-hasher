@@ -113,7 +113,7 @@ def reconnect():
     
     while True:
         stable = False
-        pool_address = get_pool()
+        pool_address,pool_port = get_pool()
         try:
             #soc = get_fastest_connection(pool_address)
             soc.connect((pool_address, int(pool_port)))
